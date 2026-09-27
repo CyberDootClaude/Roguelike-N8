@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Bonk Realms</title>
+  <link rel="stylesheet" href="style.css" />
+  <script type="importmap">
+    { "imports": { "three": "./vendor/three.module.min.js" } }
+  </script>
+</head>
+<body>
+  <canvas id="game"></canvas>
+  <canvas id="overlay"></canvas>
+  <div id="vignette"></div>
+
+  <div id="hud" class="hidden">
+    <div id="xpbar"><div id="xpfill"></div><span id="lvl">LV 1</span></div>
+    <div id="topleft">
+      <div class="bar hp"><div id="hpfill"></div><span id="hptext">100 / 100</span></div>
+      <div class="stats-row"><span id="gold">💰 0</span><span id="kills">💀 0</span></div>
+      <div id="slots">
+        <div id="wslots" class="slotrow"></div>
+        <div id="tslots" class="slotrow"></div>
+      </div>
+      <div id="itemrow"></div>
+    </div>
+    <div id="topcenter">
+      <div id="stagename">Verdant Woods</div>
+      <div id="timer">10:00</div>
+      <div id="bossbar" class="hidden">
+        <div id="bossname">Boss</div>
+        <div class="bar boss"><div id="bossfill"></div></div>
+      </div>
+    </div>
+    <div id="topright">
+      <canvas id="minimap" width="180" height="180"></canvas>
+      <div id="objective">Find the boss portal</div>
+    </div>
+    <div id="prompt" class="hidden"></div>
+    <div id="toasts"></div>
+    <div id="lockhint" class="hidden">Click to capture mouse · Esc to pause</div>
+  </div>
+
+  <div id="screen" class="hidden"></div>
+
+  <script type="module" src="src/main.js"></script>
+</body>
+</html>

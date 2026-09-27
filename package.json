@@ -1,0 +1,28 @@
+{
+  "name": "bonk-realms",
+  "version": "1.0.0",
+  "description": "3D survivor-roguelike inspired by Megabonk (Three.js, no build step)",
+  "scripts": {
+    "start": "npx --yes http-server -c-1 -p 8080 .",
+    "smoke": "node tools/smoke.mjs basic 1",
+    "sim": "node tools/sim.mjs ranger 5",
+    "dps": "node tools/dps.mjs"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/CyberDootClaude/Roguelike-N8.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/CyberDootClaude/Roguelike-N8/issues"
+  },
+  "homepage": "https://github.com/CyberDootClaude/Roguelike-N8#readme",
+  "dependencies": {
+    "three": "^0.170.0"
+  },
+  "devDependencies": {
+    "playwright": "^1.56.1"
+  },
+  "private": true
+}
