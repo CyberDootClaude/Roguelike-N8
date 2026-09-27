@@ -14,6 +14,10 @@ python3 -m http.server 8080
 
 Three.js is vendored in `vendor/`, so the game runs offline.
 
+### GitHub Pages
+
+`.github/workflows/pages.yml` publishes the game on every push to the default branch (you can also run it by hand from the Actions tab). The first time, go to **Settings → Pages → Build and deployment → Source** and choose **GitHub Actions**. After that the game is at `https://<owner>.github.io/<repo>/`.
+
 ## Controls
 
 | Key | Action |
