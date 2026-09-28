@@ -71,7 +71,7 @@ canvas#overlay { position: fixed; inset: 0; width: 100%; height: 100%; pointer-e
 .panel .sub { text-align: center; color: var(--muted); margin-bottom: 18px; }
 .title-logo { font-size: 64px !important; background: linear-gradient(180deg, #ffe07a, #ff8a2a); -webkit-background-clip: text; background-clip: text;
   color: transparent; text-shadow: none; filter: drop-shadow(0 4px 0 #6a2a0a); }
-.chars { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 10px; margin-bottom: 16px; }
+.chars { display: grid; grid-template-columns: repeat(auto-fill, minmax(122px, 1fr)); gap: 8px; margin-bottom: 16px; }
 .char { background: rgba(255,255,255,0.05); border: 2px solid var(--panel-edge); border-radius: 12px; padding: 10px; cursor: pointer; text-align: center; }
 .char:hover { border-color: rgba(255,255,255,0.4); }
 .char.sel { border-color: var(--accent); background: rgba(255, 207, 74, 0.1); }
@@ -116,4 +116,80 @@ button.toggle.on { border-color: var(--accent); background: rgba(255, 207, 74, 0
   #minimap { width: 110px; height: 110px; }
   .card { width: 100%; min-height: 0; }
   .panel h1 { font-size: 32px; }
+}
+
+/* ─── Polish pass ─── */
+body.lowhp #vignette { opacity: 0.55 !important; animation: heartbeat 0.9s infinite; }
+@keyframes heartbeat { 0%, 100% { opacity: 0.35; } 15% { opacity: 0.8; } 30% { opacity: 0.45; } 45% { opacity: 0.7; } }
+.bar.boss { position: relative; }
+.bar.boss::after { content: ''; position: absolute; left: 50%; top: 0; bottom: 0; width: 2px; background: rgba(255,255,255,0.6); }
+
+button.big { font-size: 22px; padding: 14px 44px; }
+.pill { background: rgba(255,255,255,0.15); border-radius: 20px; padding: 1px 8px; margin-left: 4px; font-size: 14px; }
+.muted { color: var(--muted); font-size: 14px; }
+.shard { color: #7fe0ff !important; }
+
+.card { animation: cardin 0.28s ease-out both; border-color: var(--rc); }
+.card.rar-rare, .card.rar-epic { box-shadow: 0 0 18px -4px var(--rc); }
+.card.rar-legendary { box-shadow: 0 0 28px -2px var(--rc); background: linear-gradient(180deg, rgba(255,180,42,0.14), rgba(255,255,255,0.04)); }
+@keyframes cardin { from { transform: translateY(24px) scale(0.95); opacity: 0; } }
+.card .banish { position: absolute; top: 4px; right: 4px; padding: 0 7px; font-size: 13px; line-height: 22px; border-radius: 6px;
+  background: rgba(255, 60, 60, 0.15); border: 1px solid rgba(255, 90, 90, 0.4); color: #ff8a8a; }
+.card .banish:hover { background: rgba(255, 60, 60, 0.4); }
+
+.build { display: flex; flex-direction: column; gap: 6px; align-items: center; margin: 10px 0; }
+.build > div { display: flex; flex-wrap: wrap; gap: 5px; justify-content: center; }
+.bchip { background: rgba(255,255,255,0.06); border: 2px solid var(--panel-edge); border-radius: 8px; padding: 2px 7px; font-size: 20px; }
+.bchip b { font-size: 11px; color: var(--accent); margin-left: 2px; }
+.bchip.tome { border-color: rgba(120, 180, 255, 0.4); }
+.bchip.item { font-size: 17px; }
+
+.shop { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 8px; margin: 10px 0; }
+.shopitem { display: flex; align-items: center; gap: 10px; background: rgba(255,255,255,0.05); border: 1px solid var(--panel-edge); border-radius: 10px; padding: 8px 10px; }
+.shopitem.maxed { opacity: 0.6; }
+.shopitem .ic { font-size: 26px; }
+.shopitem .info { flex: 1; display: flex; flex-direction: column; font-size: 13px; }
+.shopitem .info span { color: var(--muted); }
+.pips { display: flex; gap: 3px; margin-top: 4px; }
+.pips i { width: 12px; height: 5px; border-radius: 3px; background: rgba(255,255,255,0.15); }
+.pips i.on { background: #7fe0ff; }
+button[disabled] { opacity: 0.5; cursor: default; }
+
+.setrow { display: flex; align-items: center; gap: 12px; justify-content: space-between; padding: 7px 0; border-bottom: 1px solid rgba(255,255,255,0.06); }
+.setrow input[type=range] { flex: 1; accent-color: var(--accent); }
+.setrow b { width: 48px; text-align: right; color: var(--accent); }
+
+/* ─── Touch controls ─── */
+#touch { position: fixed; inset: 0; pointer-events: none; z-index: 5; touch-action: none; }
+#tz-left, #tz-right { position: absolute; top: 0; bottom: 0; pointer-events: auto; touch-action: none; }
+#tz-left { left: 0; width: 45%; }
+#tz-right { right: 0; width: 55%; }
+#joy { position: absolute; width: 120px; height: 120px; border-radius: 50%; border: 3px solid rgba(255,255,255,0.35);
+  background: rgba(0,0,0,0.2); opacity: 0; pointer-events: none; transition: opacity 0.15s; }
+#joy.on { opacity: 1; }
+#knob { position: absolute; left: 35px; top: 35px; width: 50px; height: 50px; border-radius: 50%; background: rgba(255,255,255,0.55); }
+.tbtn { position: absolute; pointer-events: auto; width: 74px; height: 74px; border-radius: 50%; padding: 0; font-size: 26px;
+  background: rgba(20, 24, 40, 0.55); border: 2px solid rgba(255,255,255,0.35); display: flex; flex-direction: column; align-items: center; justify-content: center; touch-action: none; }
+.tbtn small { font-size: 9px; letter-spacing: 1px; }
+.tbtn.down { background: rgba(255, 207, 74, 0.45); }
+#tb-jump { right: calc(24px + env(safe-area-inset-right)); bottom: calc(30px + env(safe-area-inset-bottom)); width: 88px; height: 88px; }
+#tb-slide { right: calc(120px + env(safe-area-inset-right)); bottom: calc(110px + env(safe-area-inset-bottom)); }
+#tb-act { right: calc(210px + env(safe-area-inset-right)); bottom: calc(24px + env(safe-area-inset-bottom)); }
+#tb-pause { left: 50%; transform: translateX(-50%); bottom: calc(10px + env(safe-area-inset-bottom)); width: 46px; height: 46px; font-size: 16px; }
+#tb-pause.down { transform: translateX(-50%); }
+@media (pointer: coarse) {
+  #lockhint { display: none !important; }
+  #topleft { left: calc(12px + env(safe-area-inset-left)); }
+  #topright { right: calc(12px + env(safe-area-inset-right)); }
+  #prompt { bottom: 40%; }
+  #objective { display: none; }
+  #toasts { top: auto; bottom: 45%; }
+}
+@media (max-height: 500px) {
+  #topleft { transform: scale(0.8); transform-origin: top left; }
+  #topright { transform: scale(0.75); transform-origin: top right; }
+  #topcenter { transform: translateX(-50%) scale(0.8); transform-origin: top center; }
+  .panel { padding: 14px 16px; }
+  .panel h1 { font-size: 30px; }
+  .title-logo { font-size: 40px !important; }
 }

@@ -67,10 +67,12 @@ export class Player {
     if (input.down('KeyS') || input.down('ArrowDown')) iz -= 1;
     if (input.down('KeyA')) ix -= 1;
     if (input.down('KeyD')) ix += 1;
+    if (!ix && !iz && (input.axis.x || input.axis.y)) { ix = input.axis.x; iz = input.axis.y; }
     const fx = Math.sin(camYaw), fz = Math.cos(camYaw);
     const rx = -fz, rz = fx;
     let wx = fx * iz + rx * ix, wz = fz * iz + rz * ix;
     const wl = Math.hypot(wx, wz);
+    const analog = Math.min(1, wl); // partial stick tilt walks slower
     if (wl > 0) { wx /= wl; wz /= wl; }
 
     const surface = world.surfaceAt(this.x, this.z);
@@ -110,7 +112,7 @@ export class Player {
         }
       } else {
         const accel = surface === 'ice' ? 5 : 55;
-        const tx = wx * speed, tz = wz * speed;
+        const tx = wx * speed * analog, tz = wz * speed * analog;
         const k = Math.min(1, accel * dt / Math.max(speed, 1));
         this.vx += (tx - this.vx) * k * 1.6;
         this.vz += (tz - this.vz) * k * 1.6;
@@ -159,6 +161,7 @@ export class Player {
       this.vy -= GRAVITY * dt;
       this.y += this.vy * dt;
       if (this.y <= ground) {
+        if (this.vy < -14) game.fx.burst(this.x, ground + 0.1, this.z, 0xd8d0c0, 8, 3, 0.35, 0.8);
         this.y = ground;
         this.vy = 0;
         this.onGround = true;
@@ -175,6 +178,11 @@ export class Player {
         this.hurt(4 + this.stats.maxHp * 0.035, { ignoreIframes: true, source: 'Lava' });
         game.fx.burst(this.x, this.y + 0.3, this.z, 0xff7a20, 6, 4);
       }
+    }
+
+    // slide dust
+    if (this.sliding && this.onGround && Math.random() < 0.5) {
+      game.fx.burst(this.x, ground + 0.1, this.z, surface === 'ice' ? 0xdff6ff : 0xc8b8a0, 1, 2, 0.4, 0.9);
     }
 
     // Regen

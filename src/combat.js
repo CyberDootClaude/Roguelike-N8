@@ -76,7 +76,8 @@ export class Combat {
       e.kx += (dx / d) * k; e.kz += (dz / d) * k;
     }
     if (opts.slow) e.slowT = Math.max(e.slowT, opts.slow);
-    if (game.fx.texts.length < 70 || crit) {
+    if (crit) game.audio.play('crit');
+    if (game.settings.damageNumbers && (game.fx.texts.length < 70 || crit)) {
       const n = dmg >= 1 ? Math.round(dmg) : Math.round(dmg * 10) / 10;
       game.fx.text(e.x, e.y + e.height + 0.3, e.z, crit ? n + '!' : String(n), crit ? '#ffb020' : '#ffffff', crit ? 1.3 : 0.9);
     }
@@ -186,6 +187,7 @@ export class Combat {
       } else if (p.kind === 'disc') {
         p.vis.ry = (p.vis.ry || 0) + dt * 14;
       }
+      const px0 = p.x, py0 = p.y, pz0 = p.z;
       p.x += p.vx * dt; p.y += p.vy * dt; p.z += p.vz * dt;
       if (p.kind === 'arrow' || p.kind === 'bullet') {
         p.vis.ry = Math.atan2(p.vx, p.vz);
@@ -200,19 +202,28 @@ export class Combat {
       let dead = p.t > p.life;
       if (p.lob || p.kind === 'meteor') {
         if (p.y <= ground + 0.1) { p.onLand?.(p); dead = true; }
-      } else if (p.y < ground - 0.2 && p.kind !== 'boomerang') {
-        dead = true;
-        if (p.onExpire) p.onExpire(p);
+      } else if (p.kind === 'fireball') {
+        if (p.y < ground - 0.2) { dead = true; if (p.onExpire) p.onExpire(p); }
+      } else if (p.y < ground + 0.35) {
+        // arrows, bullets and discs skim over hills instead of dying on them
+        p.y = ground + 0.35;
+        if (p.vy < 0) p.vy = 0;
+        p.vis.y = p.y;
       }
       if (!dead && p.hits !== false) {
+        // swept test along this frame's path so fast projectiles can't tunnel through enemies
         const pr = p.radius ?? 0.4;
-        const near = game.enemies.query(p.x, p.z, pr + 3, _near);
+        const sx = p.x - px0, sz = p.z - pz0, sl2 = sx * sx + sz * sz;
+        const mx = (p.x + px0) / 2, mz = (p.z + pz0) / 2;
+        const near = game.enemies.query(mx, mz, pr + 3 + Math.sqrt(sl2) / 2, _near);
         for (let k = 0; k < near.length; k++) {
           const e = near[k];
           if (!e.alive || p.hit.has(e)) continue;
           const rr = pr + e.radius;
-          if ((e.x - p.x) ** 2 + (e.z - p.z) ** 2 > rr * rr) continue;
-          if (p.y < e.y - 0.6 || p.y > e.y + e.height + 0.8) continue;
+          const t = sl2 > 1e-6 ? Math.max(0, Math.min(1, ((e.x - px0) * sx + (e.z - pz0) * sz) / sl2)) : 1;
+          const cx = px0 + sx * t, cz = pz0 + sz * t, cy = py0 + (p.y - py0) * t;
+          if ((e.x - cx) ** 2 + (e.z - cz) ** 2 > rr * rr) continue;
+          if (cy < e.y - 0.6 || cy > e.y + e.height + 0.8) continue;
           p.hit.add(e);
           if (p.onHit) { p.onHit(p, e); if (p.explodes) { dead = true; break; } }
           else this.damage(e, p.dmg, { crit: p.crit, kb: p.kb, fromX: p.x - p.vx * 0.1, fromZ: p.z - p.vz * 0.1 });

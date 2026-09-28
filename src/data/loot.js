@@ -43,7 +43,7 @@ export const WEAPONS = {
   bow: {
     name: 'Hunter Bow', icon: '🏹', kind: 'projectile',
     desc: 'Fires piercing arrows at the nearest enemy.',
-    base: { damage: 11, cooldown: 0.95, count: 1, size: 1, speed: 34, pierce: 1, duration: 1.2, crit: 0.05, knockback: 0.4 },
+    base: { damage: 15, cooldown: 0.9, count: 1, size: 1, speed: 34, pierce: 2, duration: 1.2, crit: 0.05, knockback: 0.4 },
     ups: { damage: 4, cooldown: 3, count: 2, pierce: 2, speed: 1, crit: 2 },
     proj: 'arrow',
   },
@@ -56,7 +56,7 @@ export const WEAPONS = {
   stormrod: {
     name: 'Storm Rod', icon: '⚡', kind: 'lightning',
     desc: 'Calls lightning that chains between foes.',
-    base: { damage: 15, cooldown: 1.45, count: 3, size: 1, speed: 1, pierce: 0, duration: 1, crit: 0.05, knockback: 0.2 },
+    base: { damage: 19, cooldown: 1.3, count: 4, size: 1, speed: 1, pierce: 0, duration: 1, crit: 0.05, knockback: 0.2 },
     ups: { damage: 4, cooldown: 3, count: 3, crit: 1, size: 1 },
   },
   frostaura: {
@@ -68,7 +68,7 @@ export const WEAPONS = {
   blades: {
     name: 'Orbit Blades', icon: '🌀', kind: 'orbit',
     desc: 'Spinning blades circle around you.',
-    base: { damage: 9, cooldown: 0.45, count: 2, size: 1, speed: 1, pierce: 0, duration: 1, crit: 0, knockback: 0.6 },
+    base: { damage: 11, cooldown: 0.4, count: 3, size: 1, speed: 1, pierce: 0, duration: 1, crit: 0, knockback: 0.6 },
     ups: { damage: 4, count: 3, size: 3, speed: 2 },
   },
   boomerang: {
@@ -87,7 +87,7 @@ export const WEAPONS = {
   revolver: {
     name: 'Revolver', icon: '🔫', kind: 'projectile',
     desc: 'Rapid, high-crit shots at the nearest target.',
-    base: { damage: 9, cooldown: 0.55, count: 1, size: 0.8, speed: 48, pierce: 0, duration: 0.8, crit: 0.15, knockback: 0.3 },
+    base: { damage: 12, cooldown: 0.5, count: 1, size: 0.8, speed: 48, pierce: 1, duration: 0.8, crit: 0.15, knockback: 0.3 },
     ups: { damage: 4, cooldown: 3, count: 2, pierce: 1, crit: 3 },
     proj: 'bullet',
   },

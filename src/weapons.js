@@ -115,6 +115,13 @@ export class WeaponSystem {
     void game;
   }
 
+  // Random target from a list, but aim at a nearby boss half the time.
+  pickTarget(list, spread = list.length) {
+    const b = this.game.boss;
+    if (b && !b.dead && list.includes(b.e) && Math.random() < 0.5) return b.e;
+    return list[Math.floor(Math.random() * Math.min(list.length, spread))];
+  }
+
   nearest(range) {
     const p = this.game.player;
     return this.game.enemies.nearest(p.x, p.z, range);
@@ -170,7 +177,7 @@ export class WeaponSystem {
         const targets = game.enemies.inRange(px, pz, 24, _list);
         if (!targets.length) return false;
         for (let i = 0; i < s.count; i++) {
-          const t = targets[Math.floor(Math.random() * Math.min(targets.length, 12))];
+          const t = this.pickTarget(targets, 12);
           const ty = t.y + t.height * 0.5;
           const d = Math.hypot(t.x - px, ty - py, t.z - pz) || 1;
           const r = 2.6 * s.size;
@@ -188,7 +195,7 @@ export class WeaponSystem {
       case 'lightning': {
         const targets = game.enemies.inRange(px, pz, 20, _list);
         if (!targets.length) return false;
-        const t = targets[Math.floor(Math.random() * targets.length)];
+        const t = this.pickTarget(targets);
         C.chain(t, s.damage, s.count, 7 * s.size, { crit: s.crit, kb: s.kb, fromSky: true });
         return true;
       }
@@ -210,7 +217,7 @@ export class WeaponSystem {
         const targets = game.enemies.inRange(px, pz, 16, _list);
         if (!targets.length) return false;
         for (let i = 0; i < s.count; i++) {
-          const t = targets[Math.floor(Math.random() * targets.length)];
+          const t = this.pickTarget(targets);
           const tx = t.x + rand(-1, 1), tz = t.z + rand(-1, 1);
           const T = 0.6;
           const ty = game.world.heightAt(tx, tz);
@@ -255,7 +262,7 @@ export class WeaponSystem {
         const targets = game.enemies.inRange(px, pz, 22, _list);
         if (!targets.length) return false;
         for (let i = 0; i < s.count; i++) {
-          const t = targets[Math.floor(Math.random() * targets.length)];
+          const t = this.pickTarget(targets);
           const tx = t.x + rand(-1.5, 1.5), tz = t.z + rand(-1.5, 1.5);
           const gy = game.world.heightAt(tx, tz);
           const r = 3.2 * s.size;
@@ -329,7 +336,7 @@ export class WeaponSystem {
     this.setBladeCount(s.count);
     w.state.angle = (w.state.angle || 0) + dt * 3.2 * s.speed;
     w.state.hits = w.state.hits || new Map();
-    const r = 3.2 * s.size;
+    const r = 3.8 * s.size;
     const now = game.time;
     for (let i = 0; i < s.count; i++) {
       const a = w.state.angle + (i * TAU) / s.count;

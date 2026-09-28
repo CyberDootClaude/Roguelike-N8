@@ -10,6 +10,14 @@ function action(dur, events = [], tick = null) {
 }
 const ev = (at, fn) => ({ at, fn });
 
+const ATTACK_NAMES = {
+  roots: 'Root Eruption', seeds: 'Seed Barrage', slam: 'Ground Slam', saplings: 'Call of the Grove', thornring: 'Thorn Ring',
+  spiral: 'Sun Spiral', curse: 'Curse Beams', sandport: 'Sandstorm Step', mummies: 'Raise the Servants', sunfall: 'Sunfall',
+  skulls: 'Homing Skulls', hands: 'Grave Hands', soulnova: 'Soul Nova', raise: 'Raise Dead', deathstar: 'Death Star',
+  charge: 'Glacial Charge', shards: 'Ice Shards', hail: 'Hailstorm', stomp: 'Tremor Stomp', pack: 'Howl of the Pack',
+  breath: 'Inferno Breath', meteors: 'Meteor Rain', dive: 'Dive Bomb', inferno: 'Inferno Rings', brood: 'Brood Summons',
+};
+
 // ─────────────────────────── models ───────────────────────────
 function part(parts, opts) { return buildMesh(parts, opts); }
 
@@ -218,7 +226,7 @@ export class Boss {
     const def = BOSSES[id];
     this.def = def;
     const sc = game.enemies.scaling();
-    const hp = def.hp * game.stage.mult * Math.pow(4, game.run.loop) * (1 + game.player.stats.curse * 0.4);
+    const hp = def.hp * game.stage.bossMult * Math.pow(4, game.run.loop) * (1 + game.player.stats.curse * 0.4);
     this.dmg = sc.dmg;
     this.group = def.model();
     this.group.scale.setScalar(0.01);
@@ -370,6 +378,8 @@ export class Boss {
     const name = list[Math.floor(Math.random() * list.length)];
     this.lastAttack = name;
     this.cur = this.makeAttack(name);
+    this.castName = ATTACK_NAMES[name] || '';
+    this.castT = 1.6;
   }
 
   // helpers

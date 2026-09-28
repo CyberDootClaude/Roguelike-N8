@@ -116,6 +116,7 @@ export class EnemyManager {
       kx: 0, kz: 0, slowT: 0, freezeT: 0, poisonT: 0, poisonDps: 0, poisonAcc: 0, hitFlash: 0,
       t: rand(0, 10), fireCd: rand(1, def.fireCd || 3), blinkCd: rand(1, def.blinkCd || 4), chargeCd: rand(1, 3),
       state: 'walk', stateT: 0, ry: 0, contactCd: 0, challenge: opts.challenge || null,
+      baseS: vis.s, spawnT: opts.instant ? 1 : 0,
     };
     this.list.push(e);
     return e;
@@ -384,7 +385,15 @@ export class EnemyManager {
       else if (e.poisonT > 0) { v.cr = 0.7; v.cg = 1.35; v.cb = 0.55; }
       else if (e.elite) { v.cr = 1.45; v.cg = 1.15; v.cb = 0.45; }
       else { v.cr = v.cg = v.cb = 1; }
-      if (def.ai === 'exploder' && e.state === 'fuse') { v.s = 1 + (0.7 - e.stateT) * 0.5; }
+      v.s = e.baseS;
+      if (def.ai === 'exploder' && e.state === 'fuse') v.s = e.baseS * (1 + (0.7 - e.stateT) * 0.5);
+      // rise out of the ground when spawning
+      if (e.spawnT < 1) {
+        e.spawnT = Math.min(1, e.spawnT + dt * 2.2);
+        const k = e.spawnT;
+        v.s *= 0.35 + 0.65 * k;
+        if (!e.flying) v.y -= (1 - k) * e.height * 0.8;
+      }
     }
 
     // compact dead
@@ -432,7 +441,7 @@ export class EnemyManager {
     e.pool.remove(e.vis);
     g.run.kills++;
     g.stageKills++;
-    g.fx.burst(e.x, e.y + e.height * 0.5, e.z, e.elite ? 0xffd24a : 0xffffff, e.elite ? 24 : 6, 5);
+    g.fx.burst(e.x, e.y + e.height * 0.5, e.z, e.elite ? 0xffd24a : e.def.parts[0].color, e.elite ? 24 : 7, 5, 0.5, 1 + e.radius * 0.6);
     if (e.challenge) {
       e.challenge.remaining--;
       if (e.challenge.remaining <= 0) {
@@ -445,7 +454,7 @@ export class EnemyManager {
     if (e.def.splitInto) {
       for (let i = 0; i < e.def.splitCount; i++) {
         const a = (i / e.def.splitCount) * TAU + Math.random();
-        const c = this.spawn(e.def.splitInto, e.x + Math.sin(a) * 0.8, e.z + Math.cos(a) * 0.8, { force: true, hpMult: e.elite ? 4 : 1 });
+        const c = this.spawn(e.def.splitInto, e.x + Math.sin(a) * 0.8, e.z + Math.cos(a) * 0.8, { force: true, instant: true, hpMult: e.elite ? 4 : 1 });
         if (c) { c.kx = Math.sin(a) * 8; c.kz = Math.cos(a) * 8; }
       }
     }

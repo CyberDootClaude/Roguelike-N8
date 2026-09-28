@@ -1,0 +1,12 @@
+{
+  "name": "Bonk Realms",
+  "short_name": "Bonk Realms",
+  "description": "A 3D survivor-roguelike: auto-attack, level up, loot chests and bonk the boss of each realm.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "fullscreen",
+  "orientation": "landscape",
+  "background_color": "#0b0d14",
+  "theme_color": "#0b0d14",
+  "icons": [{ "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }]
+}

@@ -24,7 +24,7 @@ export function buildLevelChoices(game, n = 3) {
     for (const id of Object.keys(TOMES)) if (!run.tomes[id]) pool.push({ type: 'tome-new', id, weight: 1 });
   }
   const picks = [];
-  const avail = pool.slice();
+  const avail = pool.filter((p) => !run.banished?.has(p.id));
   while (picks.length < n && avail.length) {
     let tot = avail.reduce((a, b) => a + b.weight, 0), x = Math.random() * tot, i = 0;
     for (; i < avail.length; i++) { x -= avail[i].weight; if (x <= 0) break; }

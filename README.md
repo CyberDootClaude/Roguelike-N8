@@ -27,9 +27,11 @@ Three.js is vendored in `vendor/`, so the game runs offline.
 | Space | Jump (air jumps with Feather items or the Storm Monk) |
 | Shift / C | Slide. Downhill slides pick up speed, and jumping out of a slide keeps your momentum |
 | E | Interact: chests, shrines, portal |
-| 1 / 2 / 3, R | Pick an upgrade, reroll |
+| 1 / 2 / 3, R | Pick an upgrade, reroll (✖ on a card banishes it for the run) |
 | Esc / P | Pause |
 | M | Mute |
+
+**Phones and tablets:** drag the left half of the screen to move and the right half to look. On-screen buttons handle Jump, Slide, Use and Pause. The game can be added to the home screen and runs full-screen in landscape.
 
 ## What's in it
 
@@ -45,7 +47,16 @@ Three.js is vendored in `vendor/`, so the game runs offline.
   - Shrines of Greed, Challenge (an elite pack guarding a free chest) and Magnet.
   - Breakable pots.
 - **Elites** show up periodically and drop chests. **Hordes** surround you every minute or so.
-- **Final Swarm**: when the stage timer (6 or 10 minutes) runs out, spawns ramp up with no limit.
+- **Final Swarm**: when the stage timer (6 or 10 minutes) runs out, spawns ramp up with no limit. You get a warning one minute before.
+- **Soul Shop**: every run earns Soul Shards. Spend them on permanent upgrades: stats, extra rerolls and banishes, and a starting revive.
+- **Procedural soundtrack**: each realm has its own music, which speeds up during boss fights and the Final Swarm.
+- **Settings**: master/music/SFX volume, look sensitivity, invert Y, graphics quality, and toggles for damage numbers, screen shake and an FPS counter.
+- **Quality of life**:
+  - Off-screen arrows point to the portal, the boss, elites and reward chests, with distances.
+  - Boss attacks are named when they're cast.
+  - The screen pulses red when your HP is low.
+  - One-time tips appear for new players.
+  - The pause, death and victory screens show your build.
 
 ### Realms, monsters and bosses
 
@@ -80,6 +91,7 @@ npm i                                # installs playwright (dev only)
 node tools/smoke.mjs debug 5         # plays all 5 realms headless, screenshots in test-output/
 node tools/sim.mjs ranger 5          # fast bot simulation of a full run (balance check)
 node tools/dps.mjs                   # per-weapon DPS vs. the first boss
+node tools/ui-shots.mjs              # screenshots of every menu plus a phone touch session
 ```
 
 URL flags: `?god` (you can't die), `?debug` (extra weapons and gold).
@@ -93,4 +105,7 @@ URL flags: `?god` (you can't die), `?debug` (extra weapons and gold).
 - `src/bosses.js`: boss models and attack patterns
 - `src/weapons.js`, `src/combat.js`: weapon behaviours, damage pipeline, procs, projectiles
 - `src/hazards.js`: enemy bullets, telegraphs, shockwaves, zones
+- `src/input.js`: keyboard, mouse and touch controls
+- `src/audio.js`: synthesized sound effects and the procedural music sequencer
+- `src/settings.js`: saved settings and Soul Shop meta-progression
 - `src/data/*.js`: all content (enemies, stages, weapons, tomes, items, characters)

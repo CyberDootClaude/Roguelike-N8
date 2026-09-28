@@ -16,6 +16,7 @@ export class FX {
     this.scene = game.scene;
     this.temps = [];
     this.texts = [];
+    this.maxParticles = 900;
     this.particles = new InstancePool(this.scene, new THREE.BoxGeometry(0.18, 0.18, 0.18),
       new THREE.MeshBasicMaterial({ color: 0xffffff }), 900, { colored: true });
   }
@@ -34,6 +35,7 @@ export class FX {
 
   burst(x, y, z, color, count = 8, speed = 5, life = 0.5, size = 1) {
     _c.set(color);
+    count = Math.min(count, this.maxParticles - this.particles.items.length);
     for (let i = 0; i < count; i++) {
       const a = Math.random() * Math.PI * 2, e = rand(0.2, 1.2);
       const s = speed * rand(0.4, 1);
