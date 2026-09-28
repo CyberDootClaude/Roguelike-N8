@@ -16,6 +16,7 @@ const ATTACK_NAMES = {
   skulls: 'Homing Skulls', hands: 'Grave Hands', soulnova: 'Soul Nova', raise: 'Raise Dead', deathstar: 'Death Star',
   charge: 'Glacial Charge', shards: 'Ice Shards', hail: 'Hailstorm', stomp: 'Tremor Stomp', pack: 'Howl of the Pack',
   breath: 'Inferno Breath', meteors: 'Meteor Rain', dive: 'Dive Bomb', inferno: 'Inferno Rings', brood: 'Brood Summons',
+  prismbeams: 'Prism Beams', shardnova: 'Shard Nova', cage: 'Crystal Cage', shatter: 'Shatter Swarm', mirror: 'Mirror Step',
 };
 
 // ─────────────────────────── models ───────────────────────────
@@ -191,6 +192,34 @@ function dragonModel() {
 }
 
 // ─────────────────────────── boss defs ───────────────────────────
+function crystalQueenModel() {
+  const g = new THREE.Group();
+  const body = part([
+    { shape: 'oct', size: [1.6], pos: [0, 2.6, 0], scale: [0.9, 2.1, 0.9], color: 0x7a4ac8 },
+    { shape: 'oct', size: [1.2], pos: [0, 2.3, 0.15], scale: [0.8, 1.7, 0.6], color: 0xb58aff },
+    { shape: 'sphere', size: [0.55], pos: [0, 5.4, 0.1], color: 0xe8e0ff },
+    { shape: 'oct', size: [0.3], pos: [0, 6.3, 0], scale: [0.6, 1.8, 0.6], color: 0x8ad8ff },
+    { shape: 'oct', size: [0.25], pos: [0.45, 6.1, 0], scale: [0.6, 1.6, 0.6], rot: [0, 0, -0.4], color: 0xff8ae0 },
+    { shape: 'oct', size: [0.25], pos: [-0.45, 6.1, 0], scale: [0.6, 1.6, 0.6], rot: [0, 0, 0.4], color: 0xff8ae0 },
+    { shape: 'box', size: [0.25, 1.8, 0.25], pos: [-1.3, 3.8, 0.2], rot: [0, 0, 0.6], color: 0x9a6ae0 },
+    { shape: 'box', size: [0.25, 1.8, 0.25], pos: [1.3, 3.8, 0.2], rot: [0, 0, -0.6], color: 0x9a6ae0 },
+    { shape: 'oct', size: [0.4], pos: [-1.9, 4.6, 0.3], color: 0x6affd8 },
+    { shape: 'oct', size: [0.4], pos: [1.9, 4.6, 0.3], color: 0x6affd8 },
+    ...glowEyes(5.45, 0.5, 0.18, 0.09, 0x3a0a6a),
+  ], { emissive: 0x2a0a4a });
+  g.add(body);
+  const ring = new THREE.Group();
+  for (let i = 0; i < 6; i++) {
+    const a = (i / 6) * TAU;
+    const shard = part([{ shape: 'oct', size: [0.45], scale: [0.6, 1.8, 0.6], color: i % 2 ? 0x8ad8ff : 0xff8ae0 }], { emissive: 0x2a1040 });
+    shard.position.set(Math.sin(a) * 3, 3, Math.cos(a) * 3);
+    ring.add(shard);
+  }
+  g.add(ring);
+  g.userData = { body, halo: ring };
+  return g;
+}
+
 export const BOSSES = {
   treant: {
     name: 'Gnarlroot, the Elder Treant', title: 'Guardian of the Verdant Woods', color: '#7fdc5a',
@@ -217,6 +246,11 @@ export const BOSSES = {
     model: dragonModel, radius: 2.8, height: 6, speed: 4.2, hover: 4.5, hp: 5200,
     attacks: ['breath', 'meteors', 'dive', 'inferno', 'brood'],
   },
+  prismatrix: {
+    name: 'Prismatrix, the Crystal Queen', title: 'Heart of the Crystal Caverns', color: '#c89aff', added: '1.1.0',
+    model: crystalQueenModel, radius: 2.0, height: 7, speed: 3.6, hover: 1.4, hp: 4400,
+    attacks: ['prismbeams', 'shardnova', 'cage', 'shatter', 'mirror'],
+  },
 };
 
 export class Boss {
@@ -226,7 +260,7 @@ export class Boss {
     const def = BOSSES[id];
     this.def = def;
     const sc = game.enemies.scaling();
-    const hp = def.hp * game.stage.bossMult * Math.pow(4, game.run.loop) * (1 + game.player.stats.curse * 0.4);
+    const hp = game.mods.bossHp * def.hp * game.stage.bossMult * Math.pow(4, game.run.loop) * (1 + game.player.stats.curse * 0.4);
     this.dmg = sc.dmg;
     this.group = def.model();
     this.group.scale.setScalar(0.01);
@@ -677,6 +711,69 @@ export class Boss {
           g.ui.toast('Ignar summons its brood!', '#ff7a2a');
         })]);
       }
+      // ── Prismatrix ──
+      case 'prismbeams': {
+        const base = this.aimAngle();
+        const waves = P2 ? 4 : 3;
+        const evs = [];
+        for (let w = 0; w < waves; w++) evs.push(ev(0.1 + w * 0.55, () => {
+          for (let i = 0; i < 5; i++) {
+            H.line(e.x, e.z, base + w * 0.32 + (i / 5) * TAU, 40, 2.2, 1.0, 18 * D, w % 2 ? 0x8ad8ff : 0xff8ae0, { source: 'Prism Beam' });
+          }
+        }));
+        const a = action(0.3 + waves * 0.55 + 1.1, evs);
+        a.mobile = false; a.lockFacing = true;
+        return a;
+      }
+      case 'shardnova': {
+        return action(2.2, [0, 0.45, 0.9, ...(P2 ? [1.35] : [])].map((at, i) => ev(at + 0.3, () => {
+          H.radial(e.x, e.y + 2.5, e.z, 24, 10, 12 * D, i % 2 ? 0x8ad8ff : 0xff8ae0, i * 0.13, { source: 'Shard Nova' });
+          g.audio.play('zap');
+        })));
+      }
+      case 'cage': {
+        // a ring of crystals around the player with one gap, then the middle detonates
+        const cx = p.x, cz = p.z, n = 12, gap = Math.floor(Math.random() * n);
+        const a = action(2.8, [
+          ev(0.1, () => {
+            for (let i = 0; i < n; i++) {
+              if (i === gap) continue;
+              const ang = (i / n) * TAU;
+              H.circle(cx + Math.sin(ang) * 6.5, cz + Math.cos(ang) * 6.5, 1.9, 1.6, 20 * D, 0xc89aff, { source: 'Crystal Cage' });
+            }
+          }),
+          ev(0.8, () => H.circle(cx, cz, 5.2, 1.4, 26 * D, 0xff5ad8, { source: 'Crystal Cage' })),
+        ]);
+        g.hint?.('cage', 'Crystal Cage: look for the gap in the ring and get out before the centre shatters!');
+        return a;
+      }
+      case 'shatter': {
+        return action(1.4, [ev(0.5, () => {
+          for (let i = 0; i < 10; i++) {
+            const a = (i / 10) * TAU;
+            g.enemies.spawn(i % 2 ? 'shardling' : 'crystalcrawler', p.x + Math.sin(a) * 12, p.z + Math.cos(a) * 12, { force: true });
+          }
+          g.ui.toast('The Crystal Queen shatters into servants!', '#c89aff');
+        })]);
+      }
+      case 'mirror': {
+        return action(2.2, [
+          ev(0.2, () => { g.fx.burst(e.x, e.y + 3, e.z, 0xc89aff, 30, 8); this.group.visible = false; e.untargetable = true; }),
+          ev(0.7, () => {
+            e.x = clamp(p.x - (e.x - p.x), -PLAY_HALF + 3, PLAY_HALF - 3);
+            e.z = clamp(p.z - (e.z - p.z), -PLAY_HALF + 3, PLAY_HALF - 3);
+            this.group.visible = true; e.untargetable = false;
+            g.fx.burst(e.x, e.y + 3, e.z, 0xc89aff, 30, 8);
+          }),
+          ev(1.1, () => {
+            for (let i = 0; i < (P2 ? 6 : 4); i++) {
+              const ang = (i / (P2 ? 6 : 4)) * TAU;
+              H.bullet(e.x + Math.sin(ang) * 2, this.mouthY(), e.z + Math.cos(ang) * 2, Math.sin(ang) * 7, 2, Math.cos(ang) * 7, 15 * D, 0xff8ae0, { homing: 1.4, life: 6, size: 1.4, source: 'Mirror Shard' });
+            }
+            H.shockwave(e.x, e.z, 13, 24, 16 * D, 0xc89aff);
+          }),
+        ]);
+      }
     }
     return action(0.5);
   }
@@ -697,6 +794,7 @@ export class Boss {
     g.pickups.heart(e.x, e.y + 1, e.z);
     g.world.addChest(e.x + 3, e.z, true);
     g.world.addChest(e.x - 3, e.z, true);
+    for (let i = 0; i < (g.mods.bossChests || 0); i++) g.world.addChest(e.x + rand(-4, 4), e.z + 3 + i * 2.5, true);
     g.enemies.blastAll(e.x, e.z, 30, 1e7);
     g.run.kills++;
     g.onBossDefeated(this);

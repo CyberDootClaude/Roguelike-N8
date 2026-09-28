@@ -4,7 +4,7 @@ import http from 'node:http';
 import fs from 'node:fs';
 import path from 'node:path';
 const root = path.resolve(path.dirname(new URL(import.meta.url).pathname), '..');
-const types = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css' };
+const types = { '.json': 'application/json', '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css' };
 const server = http.createServer((req, res) => {
   const u = decodeURIComponent(req.url.split('?')[0]);
   const f = path.join(root, u === '/' ? 'index.html' : u);
@@ -15,7 +15,7 @@ const page = await browser.newPage();
 page.on('pageerror', (e) => console.log('ERR', e));
 await page.goto(`http://localhost:${server.address().port}/?god`);
 await page.waitForTimeout(800);
-const weapons = Object.keys(await page.evaluate(async () => (await import('/src/data/loot.js')).WEAPONS));
+const weapons = process.argv[2] ? process.argv.slice(2) : Object.keys(await page.evaluate(async () => (await import('/src/data/loot.js')).WEAPONS));
 for (const w of weapons) {
   const r = await page.evaluate((w) => {
     const g = window.__game;

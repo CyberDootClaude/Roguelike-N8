@@ -1,7 +1,10 @@
 // DOM HUD, menus, modals, minimap and the 2D overlay (damage numbers, health bars, banners).
 import * as THREE from 'three';
 import { CHARACTERS, WEAPONS, TOMES, ITEMS, RARITIES } from './data/loot.js';
-import { STAGES } from './data/stages.js';
+import { STAGE_SLOTS, REALM_COUNT } from './data/stages.js';
+import { MUTATORS } from './data/mutators.js';
+import { GAME_VERSION, PATCHES, isNew } from './data/patches.js';
+import { currentDaily, currentWeekly } from './modes.js';
 import { formatTime, fmtNum, clamp } from './util.js';
 import { MAX_WEAPONS, MAX_TOMES } from './progression.js';
 import { META_UPGRADES, metaCost } from './settings.js';
@@ -9,7 +12,8 @@ import { WORLD_HALF } from './world.js';
 
 const $ = (id) => document.getElementById(id);
 const _v = new THREE.Vector3();
-const CHAR_ICONS = { knight: '🛡️', ranger: '🏹', pyro: '🔥', monk: '⚡', gunslinger: '🤠', dancer: '🌀', alchemist: '🧪' };
+const CHAR_ICONS = { knight: '🛡️', ranger: '🏹', pyro: '🔥', monk: '⚡', gunslinger: '🤠', dancer: '🌀', alchemist: '🧪', quartz: '💎' };
+const NEW_BADGE = '<span class="newbadge">NEW</span>';
 
 export class UI {
   constructor(game) {
@@ -131,7 +135,9 @@ export class UI {
     $('lvl').textContent = `LV ${run.level}`;
     $('gold').textContent = `💰 ${fmtNum(run.gold)}`;
     $('kills').textContent = `💀 ${fmtNum(run.kills)}`;
-    $('stagename').textContent = `Stage ${g.stageIndex + 1 + run.loop * STAGES.length} · ${g.stage.name}`;
+    const mutHtml = g.run.mutators.map((id) => `<span title="${MUTATORS[id].name}: ${MUTATORS[id].desc}">${MUTATORS[id].icon}</span>`).join('');
+    if ($('hudmuts').innerHTML !== mutHtml) $('hudmuts').innerHTML = mutHtml;
+    $('stagename').textContent = `Stage ${g.stageIndex + 1 + run.loop * REALM_COUNT} · ${g.stage.name}`;
     if (g.boss && !g.boss.dead) $('bossname').textContent = g.boss.def.name;
     let obj = 'Explore, get stronger, find the boss portal';
     if (g.world.portal.state === 'active') obj = 'Defeat the boss!';
@@ -346,7 +352,10 @@ export class UI {
   }
 
   // ───────────────────────── screens ─────────────────────────
-  show(html) {
+  screenIs(name) { return !this.screen.classList.contains('hidden') && this.current === name; }
+
+  show(html, name = '') {
+    this.current = name;
     this.screen.innerHTML = html;
     this.screen.classList.remove('hidden');
   }
@@ -355,12 +364,22 @@ export class UI {
     this.screen.innerHTML = '';
   }
 
+  mutatorChips(ids) {
+    return ids.map((id) => `<span class="mut" title="${MUTATORS[id].desc}">${MUTATORS[id].icon} ${MUTATORS[id].name}</span>`).join('');
+  }
+
   showMenu(records) {
     const g = this.game;
+    const mode = g.mode;
+    const daily = currentDaily();
+    const weekly = currentWeekly();
+    const lockedChar = mode === 'daily' ? daily.char : null;
     const chars = CHARACTERS.map((c) => {
       const r = records?.[c.id];
       const w = WEAPONS[c.weapon];
-      return `<div class="char ${c.id === this.selectedChar ? 'sel' : ''}" data-act="char" data-id="${c.id}">
+      const sel = lockedChar ? c.id === lockedChar : c.id === this.selectedChar;
+      return `<div class="char ${sel ? 'sel' : ''} ${lockedChar && !sel ? 'locked' : ''}" ${lockedChar ? '' : `data-act="char" data-id="${c.id}"`}>
+        ${isNew(c.added) ? NEW_BADGE : ''}
         <div class="ic">${CHAR_ICONS[c.id] || '🙂'}</div>
         <div class="nm">${c.name}</div>
         <div class="pk">${w.icon} ${w.name}<br>${c.perk}</div>
@@ -368,21 +387,49 @@ export class UI {
       </div>`;
     }).join('');
     const lengths = [[360, 'Quick (6 min)'], [600, 'Standard (10 min)']];
+    const modes = [['standard', '⚔️ Standard'], ['daily', '📅 Daily Challenge'], ['weekly', `🎪 ${weekly.live ? 'Live Event' : 'Weekly Event'}`]];
+    let modeInfo = '';
+    if (mode === 'daily') {
+      const best = g.meta.daily?.[daily.id];
+      modeInfo = `<div class="modeinfo"><b>${daily.name}</b> — same hero, realms and rules for everyone today.
+        <div class="muts">${this.mutatorChips(daily.mutators)}</div>
+        <span class="muted">Soul Shards ×${daily.shardMult.toFixed(2)}${best ? ` · Today's best: <b>${fmtNum(best)}</b>` : ''}</span></div>`;
+    } else if (mode === 'weekly') {
+      modeInfo = `<div class="modeinfo"><b>${weekly.name}</b> — ${weekly.desc} <span class="muted">Ends ${weekly.ends}</span>
+        <div class="muts">${this.mutatorChips(weekly.mutators)}</div>
+        <span class="muted">Soul Shards ×${weekly.shardMult.toFixed(2)}</span></div>`;
+    }
+    const slots = STAGE_SLOTS.map((slot, i) => `<span class="stage-chip">${i + 1}. ${slot.map((st) => st.name + (isNew(st.added) ? ' ✨' : '')).join(' / ')}</span>`).join('');
     this.show(`<div class="panel">
       <h1 class="title-logo">BONK REALMS</h1>
       <div class="sub">A 3D survivor-roguelike. Auto-attack, level up, loot chests, find the portal and bonk the boss of each realm.</div>
-      <div class="stage-preview">${STAGES.map((s, i) => `<span class="stage-chip">${i + 1}. ${s.name}</span>`).join('')}</div>
+      <div class="stage-preview">${slots}</div>
+      <div class="row modes">${modes.map(([v, l]) => `<button class="sm toggle ${mode === v ? 'on' : ''}" data-act="mode" data-v="${v}">${l}</button>`).join('')}</div>
+      ${modeInfo}
       <div class="chars">${chars}</div>
       <div class="row">Stage timer:
         ${lengths.map(([v, l]) => `<button class="sm toggle ${this.runLength === v ? 'on' : ''}" data-act="len" data-v="${v}">${l}</button>`).join('')}
       </div>
-      <div class="row"><button class="primary big" data-act="start">▶ Start Run</button></div>
+      <div class="row"><button class="primary big" data-act="start">▶ Start ${mode === 'daily' ? 'Daily Challenge' : mode === 'weekly' ? weekly.name : 'Run'}</button></div>
       <div class="row">
         <button data-act="shop">💠 Soul Shop <span class="pill">${fmtNum(g.meta.shards)}</span></button>
         <button data-act="settings">⚙️ Settings</button>
         <button data-act="help">❔ How to Play</button>
+        <button data-act="whatsnew">📰 What's New</button>
       </div>
-    </div>`);
+      <div class="version">v${GAME_VERSION} · ${PATCHES[0].title}</div>
+    </div>`, 'menu');
+  }
+
+  showWhatsNew() {
+    const patches = PATCHES.map((p, i) => `<div class="patch ${i === 0 ? 'latest' : ''}">
+      <div class="ph"><b>v${p.version} — ${p.title}</b><span class="muted">${p.date}</span></div>
+      <ul>${p.notes.map((n) => `<li>${n}</li>`).join('')}</ul></div>`).join('');
+    this.show(`<div class="panel" style="max-width:720px">
+      <h2>📰 What's New</h2>
+      ${patches}
+      <div class="row"><button class="primary" data-act="back">Let's go!</button></div>
+    </div>`, 'whatsnew');
   }
 
   showHelp() {
@@ -414,7 +461,7 @@ export class UI {
       ${canBanish ? `<button class="banish" data-act="banish" data-i="${i}" title="Banish: never offer this again this run">✖</button>` : ''}
       <div class="ic">${c.icon}</div>
       <div class="ttl">${c.title}</div>
-      <div class="tag">${c.tag || ''}</div>
+      <div class="tag">${c.tag || ''}${c.isNew ? ' ' + NEW_BADGE : ''}</div>
       <div class="rar" style="color:${r.color}">${r.name}</div>
       <ul>${(c.lines || []).map((l) => `<li>${l}</li>`).join('')}</ul>
     </div>`;
@@ -461,6 +508,7 @@ export class UI {
     this.show(`<div class="panel" style="max-width:780px">
       <h2>Paused</h2>
       <div class="sub">Stage ${g.stageIndex + 1} · ${g.stage.name} · ${formatTime(g.stageTime)} elapsed · Level ${g.run.level}</div>
+      ${g.run.mutators.length ? `<div class="muts center">${this.mutatorChips(g.run.mutators)}</div>` : ''}
       ${this.buildHtml()}
       ${this.statsHtml()}
       <div class="row"><button class="primary" data-act="resume">Resume</button><button data-act="settings">⚙️ Settings</button><button data-act="quit">Quit to Menu</button></div>
@@ -477,6 +525,8 @@ export class UI {
       <div><span>Damage dealt</span><b>${fmtNum(sum.damage)}</b></div>
       <div><span>Run time</span><b>${formatTime(sum.time)}</b></div>
       ${sum.shards !== undefined ? `<div><span>Soul Shards</span><b class="shard">+${sum.shards} 💠</b></div>` : ''}
+      ${sum.mode && sum.mode !== 'standard' ? `<div><span>Mode</span><b>${sum.label}</b></div>` : ''}
+      ${sum.dailyScore !== undefined ? `<div><span>Daily score</span><b>${fmtNum(sum.dailyScore)}${sum.dailyScore >= sum.dailyBest ? ' 🏅 best!' : ` (best ${fmtNum(sum.dailyBest)})`}</b></div>` : ''}
     </div>${this.buildHtml()}`;
   }
 

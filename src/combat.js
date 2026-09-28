@@ -37,7 +37,16 @@ export class Combat {
         { shape: 'cyl', size: [0.45, 0.5, 0.25, 8], seg: 8, pos: [0, 0.12, 0], color: 0xe8e0c8 },
         { shape: 'sphere', size: [0.12], pos: [0, 0.3, 0], color: 0xff3a2a },
       ]), vcMat({ emissive: 0x220000 }), 120),
+      shard: new InstancePool(s, new THREE.OctahedronGeometry(0.22, 0).scale(0.7, 0.7, 1.8), basicMat(0xb8e8ff), 400),
+      totem: new InstancePool(s, buildGeometry([
+        { shape: 'cyl', size: [0.35, 0.45, 1.8, 6], seg: 6, pos: [0, 0.9, 0], color: 0x7a6a5a },
+        { shape: 'box', size: [0.7, 0.35, 0.7], pos: [0, 1.9, 0], color: 0x5a4a3a },
+        { shape: 'oct', size: [0.3], pos: [0, 2.45, 0], color: 0x6ad8ff },
+        { shape: 'box', size: [0.12, 0.12, 0.06], pos: [-0.14, 1.95, 0.36], color: 0x6affd8 },
+        { shape: 'box', size: [0.12, 0.12, 0.06], pos: [0.14, 1.95, 0.36], color: 0x6affd8 },
+      ]), vcMat({ emissive: 0x0a2a3a }), 40),
     };
+    this.turrets = [];
     this.puddleGeo = new THREE.CircleGeometry(1, 20).rotateX(-Math.PI / 2);
   }
 
@@ -47,6 +56,7 @@ export class Combat {
     for (const p of this.puddles) { this.game.scene.remove(p.mesh); p.mesh.material.dispose(); }
     this.puddles.length = 0;
     this.mines.length = 0;
+    this.turrets.length = 0;
   }
 
   // ─────────────────────── damage pipeline ───────────────────────
@@ -189,7 +199,7 @@ export class Combat {
       }
       const px0 = p.x, py0 = p.y, pz0 = p.z;
       p.x += p.vx * dt; p.y += p.vy * dt; p.z += p.vz * dt;
-      if (p.kind === 'arrow' || p.kind === 'bullet') {
+      if (p.kind === 'arrow' || p.kind === 'bullet' || p.kind === 'shard') {
         p.vis.ry = Math.atan2(p.vx, p.vz);
         p.vis.rx = -Math.atan2(p.vy, Math.hypot(p.vx, p.vz));
       } else if (p.kind === 'fireball' || p.kind === 'meteor' || p.kind === 'flask') {
@@ -236,7 +246,7 @@ export class Combat {
         this.removeProjectile(i);
       }
     }
-    for (const pool of Object.values(this.pools)) if (pool !== this.pools.mine) pool.sync();
+    for (const pool of Object.values(this.pools)) if (pool !== this.pools.mine && pool !== this.pools.totem) pool.sync();
 
     // puddles
     for (let i = this.puddles.length - 1; i >= 0; i--) {
@@ -278,6 +288,44 @@ export class Combat {
       }
     }
     mp.sync();
+
+    // guardian totems: fire at the nearest enemy until they crumble
+    const tp = this.pools.totem;
+    for (let i = this.turrets.length - 1; i >= 0; i--) {
+      const t = this.turrets[i];
+      t.t += dt; t.cd -= dt;
+      t.vis.ry = (t.vis.ry || 0) + dt * 0.8;
+      t.vis.s = Math.min(1, t.t * 4) * (t.t > t.life - 0.3 ? Math.max(0.01, (t.life - t.t) / 0.3) : 1);
+      if (t.cd <= 0) {
+        const target = game.enemies.nearest(t.x, t.z, 18);
+        if (target) {
+          t.cd = t.rate;
+          const sy = t.y + 2.45, ty = target.y + target.height * 0.5;
+          const d = Math.hypot(target.x - t.x, ty - sy, target.z - t.z) || 1;
+          this.spawnProjectile({
+            kind: 'shard', x: t.x, y: sy, z: t.z,
+            vx: (target.x - t.x) / d * t.speed, vy: (ty - sy) / d * t.speed, vz: (target.z - t.z) / d * t.speed,
+            dmg: t.dmg, pierce: t.pierce, life: 0.9, crit: t.crit, kb: t.kb, radius: 0.45, size: 1.2,
+          });
+        } else t.cd = 0.2;
+      }
+      if (t.t >= t.life) {
+        game.fx.burst(t.x, t.y + 1.5, t.z, 0x6ad8ff, 10, 4);
+        tp.remove(t.vis);
+        this.turrets.splice(i, 1);
+      }
+    }
+    tp.sync();
+  }
+
+  addTurret(x, z, life, dmg, rate, speed, pierce, crit, kb) {
+    // at most 6 totems stand at once: the oldest crumbles
+    if (this.turrets.length >= 6) this.turrets[0].t = this.turrets[0].life;
+    const y = this.game.world.heightAt(x, z);
+    const vis = { x, y, z, s: 0.01 };
+    if (!this.pools.totem.add(vis)) return;
+    this.game.fx.ring(x, y, z, 0.3, 2.5, 0x6ad8ff, 0.4, 0.7);
+    this.turrets.push({ x, y, z, life, dmg, rate, speed, pierce, crit, kb, t: 0, cd: 0.2, vis });
   }
 
   addPuddle(x, z, r, dur, dmg, crit, color = 0x6aff3a) {

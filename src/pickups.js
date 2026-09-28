@@ -117,7 +117,7 @@ export class Pickups {
     switch (it.type) {
       case 'gem': g.gainXp(it.value); g.audio.play('gem'); break;
       case 'coin': {
-        const v = Math.round(it.value * p.stats.goldGain * (1 + p.stats.curse * 0.5));
+        const v = Math.round(it.value * p.stats.goldGain * (1 + p.stats.curse * 0.5) * g.mods.goldMult);
         g.run.gold += v; g.run.goldEarned += v; g.audio.play('coin');
         break;
       }

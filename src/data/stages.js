@@ -136,6 +136,46 @@ export const STAGES = [
   },
 ];
 
+// ───────────── Realm variants (added in patches) ─────────────
+export const CRYSTAL_CAVERNS = {
+  id: 'crystal',
+  added: '1.1.0',
+  name: 'Crystal Caverns',
+  subtitle: 'Everything here sings — and bites',
+  boss: 'prismatrix',
+  mult: 5, bossMult: 4.3,
+  sky: 0x1e1438, fog: 0x3a2a60, fogNear: 22, fogFar: 105,
+  hemi: [0xd8c0ff, 0x3a2a60, 1.35], sun: [0xe8d8ff, 1.3],
+  ground: { low: 0x4a4470, high: 0x7a70a8, steep: 0x2e2848, accent: 0x6a4aa0 },
+  terrain: { amp: 9, freq: 0.013, ridged: true, flatten: 0 },
+  hazard: 'geysers',
+  props: [
+    { kind: 'crystalcluster', count: 130, collide: 0.9, scale: [0.7, 1.8] },
+    { kind: 'stalagmite', count: 110, collide: 0.8, scale: [0.8, 2.0] },
+    { kind: 'geode', count: 45, collide: 1.4, scale: [0.8, 1.5] },
+    { kind: 'glowshroom', count: 90, collide: 0, scale: [0.8, 1.6] },
+  ],
+  roster: [
+    { id: 'crystalcrawler', weight: 10, from: 0 },
+    { id: 'gembeetle', weight: 6, from: 0.5 },
+    { id: 'prismwisp', weight: 5, from: 1 },
+    { id: 'shardling', weight: 4, from: 2 },
+    { id: 'mirrormage', weight: 3, from: 3 },
+    { id: 'geodegolem', weight: 2, from: 4.5 },
+  ],
+};
+
+// Each realm slot lists the realms that can appear there. A run picks one per slot,
+// so adding a variant to a slot freshens runs without lengthening them.
+export const STAGE_SLOTS = [
+  [STAGES[0]],
+  [STAGES[1]],
+  [STAGES[2], CRYSTAL_CAVERNS],
+  [STAGES[3]],
+  [STAGES[4]],
+];
+export const REALM_COUNT = STAGE_SLOTS.length;
+
 // Prop models (built with buildGeometry). Base scale ~1 unit = 1 metre.
 export const PROPS = {
   pine: [
@@ -263,5 +303,27 @@ export const PROPS = {
   vent: [
     { shape: 'cyl', size: [0.6, 1.0, 0.8, 7], seg: 7, pos: [0, 0.4, 0], color: 0x2a2020 },
     { shape: 'cyl', size: [0.45, 0.45, 0.05, 7], seg: 7, pos: [0, 0.81, 0], color: 0xff6a10 },
+  ],
+  crystalcluster: [
+    { shape: 'oct', size: [0.7], pos: [0, 1.3, 0], scale: [0.6, 2.4, 0.6], color: 0xb58aff },
+    { shape: 'oct', size: [0.5], pos: [0.6, 0.8, 0.2], scale: [0.6, 2.0, 0.6], rot: [0, 0, -0.45], color: 0x8ad8ff },
+    { shape: 'oct', size: [0.45], pos: [-0.5, 0.7, -0.3], scale: [0.6, 1.8, 0.6], rot: [0.3, 0, 0.5], color: 0xff8ae0 },
+    { shape: 'dodeca', size: [0.6], pos: [0, 0.2, 0], scale: [1.4, 0.5, 1.2], color: 0x3a3456 },
+  ],
+  stalagmite: [
+    { shape: 'cone', size: [0.8, 3.2, 6], seg: 6, pos: [0, 1.6, 0], color: 0x4a4466 },
+    { shape: 'cone', size: [0.45, 1.8, 6], seg: 6, pos: [0.7, 0.9, 0.2], color: 0x3e3858 },
+    { shape: 'oct', size: [0.25], pos: [0, 3.0, 0], scale: [0.6, 1.6, 0.6], color: 0x8ad8ff },
+  ],
+  geode: [
+    { shape: 'dodeca', size: [1.3], pos: [0, 0.7, 0], scale: [1.1, 0.8, 1], color: 0x5a5470 },
+    { shape: 'oct', size: [0.5], pos: [0.3, 1.3, 0.6], scale: [0.6, 1.3, 0.6], color: 0xc46bff },
+    { shape: 'oct', size: [0.4], pos: [-0.4, 1.2, 0.5], scale: [0.6, 1.2, 0.6], color: 0x6ad8ff },
+  ],
+  glowshroom: [
+    { shape: 'cyl', size: [0.08, 0.12, 0.7], pos: [0, 0.35, 0], color: 0xd8d0f0 },
+    { shape: 'sphere', size: [0.32], pos: [0, 0.72, 0], scale: [1, 0.55, 1], color: 0x6affd8 },
+    { shape: 'cyl', size: [0.06, 0.09, 0.45], pos: [0.3, 0.22, 0.1], color: 0xd8d0f0 },
+    { shape: 'sphere', size: [0.2], pos: [0.3, 0.46, 0.1], scale: [1, 0.55, 1], color: 0xff8ae0 },
   ],
 };

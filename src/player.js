@@ -132,7 +132,7 @@ export class Player {
 
     // Jump
     if (input.wasPressed('Space') && this.jumpsLeft > 0) {
-      this.vy = JUMP_V * (this.onGround ? 1 : 0.92);
+      this.vy = JUMP_V * game.mods.jump * (this.onGround ? 1 : 0.92);
       this.jumpsLeft--;
       this.onGround = false;
       game.audio.play('jump');
@@ -158,7 +158,7 @@ export class Player {
       }
     }
     if (!this.onGround) {
-      this.vy -= GRAVITY * dt;
+      this.vy -= GRAVITY * game.mods.gravity * dt;
       this.y += this.vy * dt;
       if (this.y <= ground) {
         if (this.vy < -14) game.fx.burst(this.x, ground + 0.1, this.z, 0xd8d0c0, 8, 3, 0.35, 0.8);
@@ -186,7 +186,7 @@ export class Player {
     }
 
     // Regen
-    if (this.hp < this.stats.maxHp) this.hp = Math.min(this.stats.maxHp, this.hp + this.stats.regen * dt);
+    if (this.hp < this.stats.maxHp && !this.noRegen) this.hp = Math.min(this.stats.maxHp, this.hp + this.stats.regen * dt);
 
     // Facing follows movement
     const hv = Math.hypot(this.vx, this.vz);
@@ -313,6 +313,13 @@ export function makePlayerMesh(char) {
     case 'bandana':
       parts.push({ shape: 'box', size: [0.74, 0.12, 0.74], pos: [0, 2.0, 0], color: char.accent },
         { shape: 'box', size: [0.12, 0.4, 0.06], pos: [0.1, 1.9, -0.38], rot: [0.3, 0, 0.3], color: char.accent });
+      break;
+    case 'crystal':
+      parts.push({ shape: 'oct', size: [0.22], pos: [0, 2.3, 0], scale: [0.6, 1.8, 0.6], color: char.accent },
+        { shape: 'oct', size: [0.16], pos: [0.25, 2.15, -0.05], scale: [0.6, 1.5, 0.6], rot: [0, 0, -0.5], color: 0xc89aff },
+        { shape: 'oct', size: [0.16], pos: [-0.25, 2.15, -0.05], scale: [0.6, 1.5, 0.6], rot: [0, 0, 0.5], color: 0xff8ae0 },
+        { shape: 'oct', size: [0.2], pos: [-0.5, 1.5, 0], scale: [0.6, 1.4, 0.6], color: char.accent },
+        { shape: 'oct', size: [0.2], pos: [0.5, 1.5, 0], scale: [0.6, 1.4, 0.6], color: char.accent });
       break;
     case 'goggles':
       parts.push({ shape: 'torus', size: [0.1, 0.04], pos: [-0.14, 1.95, 0.33], color: char.accent },

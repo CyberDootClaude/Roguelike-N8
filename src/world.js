@@ -211,7 +211,7 @@ export class World {
       pp[i * 3] = (r() - 0.5) * 120; pp[i * 3 + 1] = r() * 30; pp[i * 3 + 2] = (r() - 0.5) * 120;
     }
     pGeo.setAttribute('position', new THREE.BufferAttribute(pp, 3));
-    const pColor = { woods: 0xc8f07a, dunes: 0xfff0c0, graveyard: 0x9fb8ff, tundra: 0xffffff, caldera: 0xff8a2a }[s.id];
+    const pColor = { woods: 0xc8f07a, dunes: 0xfff0c0, graveyard: 0x9fb8ff, tundra: 0xffffff, caldera: 0xff8a2a, crystal: 0xd8b0ff }[s.id] ?? 0xffffff;
     this.particles = new THREE.Points(pGeo, new THREE.PointsMaterial({
       color: pColor, size: s.id === 'tundra' ? 0.35 : 0.22, transparent: true, opacity: 0.8, depthWrite: false,
     }));
@@ -281,7 +281,7 @@ export class World {
 
   buildProps() {
     const r = this.rng;
-    const glowKinds = { lantern: 0x553300, crystal: 0x662200, vent: 0x441100, obelisk: 0x201500 };
+    const glowKinds = { lantern: 0x553300, crystal: 0x662200, vent: 0x441100, obelisk: 0x201500, crystalcluster: 0x3a1a6a, glowshroom: 0x1a4a4a, geode: 0x1a0a2a, stalagmite: 0x0a0a1a };
     if (this.stage.hazard === 'quicksand') {
       for (let i = 0; i < 16; i++) {
         const a = r() * TAU, d = 25 + r() * 105;
@@ -403,7 +403,7 @@ export class World {
     // particles follow the player loosely & drift
     if (this.particles && player) {
       const pa = this.particles.geometry.attributes.position.array;
-      const fall = { woods: 0.6, dunes: -0.1, graveyard: -0.3, tundra: 2.2, caldera: -1.5 }[this.stage.id];
+      const fall = { woods: 0.6, dunes: -0.1, graveyard: -0.3, tundra: 2.2, caldera: -1.5, crystal: -0.4 }[this.stage.id] ?? 0.3;
       for (let i = 0; i < pa.length; i += 3) {
         pa[i + 1] -= fall * dt;
         pa[i] += Math.sin(t + i) * dt * 0.6 + (this.stage.id === 'dunes' ? dt * 4 : 0);
@@ -513,7 +513,7 @@ function makeMagnetShrine() {
 }
 
 function makePot(stageId, r) {
-  const col = { woods: 0xb86a3a, dunes: 0xc88a4a, graveyard: 0x6a6a7a, tundra: 0x8ab0c8, caldera: 0x5a3a2a }[stageId];
+  const col = { woods: 0xb86a3a, dunes: 0xc88a4a, graveyard: 0x6a6a7a, tundra: 0x8ab0c8, caldera: 0x5a3a2a, crystal: 0x6a5a9a }[stageId] ?? 0x9a7a5a;
   const m = buildMesh([
     { shape: 'sphere', size: [0.5], pos: [0, 0.5, 0], color: col, scale: [1, 1.1, 1] },
     { shape: 'cyl', size: [0.25, 0.3, 0.3], pos: [0, 1.05, 0], color: col },

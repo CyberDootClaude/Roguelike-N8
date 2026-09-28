@@ -91,9 +91,9 @@ export class EnemyManager {
     const base = g.stage.mult * Math.pow(4, run.loop);
     const over = g.finalSwarm ? 1 + g.overtime / 25 : 1;
     return {
-      hp: base * (1 + min * 0.16) * (1 + curse * 0.5) * over,
-      dmg: Math.pow(base, 0.6) * (1 + min * 0.05) * (1 + curse * 0.2) * (g.finalSwarm ? 1.3 : 1),
-      speed: Math.min(1.3, 1 + min * 0.025) * (g.finalSwarm ? 1.2 : 1),
+      hp: base * (1 + min * 0.16) * (1 + curse * 0.5) * over * g.mods.enemyHp,
+      dmg: Math.pow(base, 0.6) * (1 + min * 0.05) * (1 + curse * 0.2) * (g.finalSwarm ? 1.3 : 1) * g.mods.enemyDmg,
+      speed: Math.min(1.3, 1 + min * 0.025) * (g.finalSwarm ? 1.2 : 1) * g.mods.enemySpeed,
       xp: 1 + g.stageIndex * 0.35 + run.loop,
     };
   }
@@ -105,13 +105,14 @@ export class EnemyManager {
     const sc = this.scaling();
     const elite = !!opts.elite;
     const hp = def.hp * sc.hp * (elite ? 12 : 1) * (opts.hpMult || 1);
-    const vis = { x, y: 0, z, s: elite ? 1.7 : 1, cr: 1, cg: 1, cb: 1 };
+    const size = (elite ? 1.7 : 1) * this.game.mods.enemySize;
+    const vis = { x, y: 0, z, s: size, cr: 1, cg: 1, cb: 1 };
     if (!pool.add(vis)) return null;
     const flying = def.ai === 'flier' || def.flying;
     const e = {
       def, id, x, z, y: this.game.world.heightAt(x, z) + (flying ? def.hover || 2 : 0),
       hp, maxHp: hp, damage: def.damage * sc.dmg * (elite ? 1.6 : 1), speed: def.speed * sc.speed * rand(0.9, 1.1),
-      radius: def.radius * (elite ? 1.7 : 1), height: this.geos[id].height * (elite ? 1.7 : 1),
+      radius: def.radius * size, height: this.geos[id].height * size,
       xp: def.xp * sc.xp * (elite ? 25 : 1), alive: true, elite, boss: false, flying, vis, pool,
       kx: 0, kz: 0, slowT: 0, freezeT: 0, poisonT: 0, poisonDps: 0, poisonAcc: 0, hitFlash: 0,
       t: rand(0, 10), fireCd: rand(1, def.fireCd || 3), blinkCd: rand(1, def.blinkCd || 4), chargeCd: rand(1, 3),
@@ -172,8 +173,8 @@ export class EnemyManager {
     let target = (16 + min * 14) * (1 + curse * 0.6);
     if (g.finalSwarm) target *= 2.2;
     if (g.bossActive) target *= 0.45;
-    target = Math.min(CAP, target);
-    const rate = (3 + min * 2) * (g.finalSwarm ? 3 : 1) * (1 + curse * 0.5);
+    target = Math.min(CAP, target * g.mods.spawnCap);
+    const rate = (3 + min * 2) * (g.finalSwarm ? 3 : 1) * (1 + curse * 0.5) * g.mods.spawnRate;
     this.spawnAcc += dt * rate;
     let alive = this.list.length;
     while (this.spawnAcc >= 1) {
@@ -201,7 +202,7 @@ export class EnemyManager {
       }
       this.eliteTimer -= dt;
       if (this.eliteTimer <= 0) {
-        this.eliteTimer = g.finalSwarm ? 25 : 70;
+        this.eliteTimer = (g.finalSwarm ? 25 : 70) * g.mods.eliteEvery;
         this.spawnElite();
       }
     }
@@ -457,6 +458,12 @@ export class EnemyManager {
         const c = this.spawn(e.def.splitInto, e.x + Math.sin(a) * 0.8, e.z + Math.cos(a) * 0.8, { force: true, instant: true, hpMult: e.elite ? 4 : 1 });
         if (c) { c.kx = Math.sin(a) * 8; c.kz = Math.cos(a) * 8; }
       }
+    }
+    // Chain Reaction mutator
+    if (g.mods.deathBlast && Math.random() < g.mods.deathBlast && (this.blastDepth || 0) < 3) {
+      this.blastDepth = (this.blastDepth || 0) + 1;
+      g.combat.explode(e.x, e.y + 0.6, e.z, 2.6 + e.radius, e.maxHp * 0.6, { noProc: true, noCrit: true, color: 0xff9a3a });
+      this.blastDepth--;
     }
     if (noDrop) return;
     const pk = g.pickups;

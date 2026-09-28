@@ -1,0 +1,23 @@
+{
+  "_readme": "Live events. The game fetches this file at startup; an event whose start..end range (YYYY-MM-DD, UTC) covers today replaces the weekly rotation. Mutator ids are listed in src/data/mutators.js. Edit, push, done - no code release needed.",
+  "events": [
+    {
+      "id": "crystal-launch",
+      "name": "Crystal Launch Week",
+      "desc": "Celebrate the Crystal Update with double gold and lucky rolls!",
+      "start": "2026-09-28",
+      "end": "2026-10-05",
+      "mutators": ["goldrush", "luckyday", "bloodmoon"],
+      "shardBonus": 2
+    },
+    {
+      "id": "halloween-2026",
+      "name": "Night of the Bonk",
+      "desc": "The dead are restless: thick fog, giant foes, and triple Soul Shards.",
+      "start": "2026-10-25",
+      "end": "2026-11-02",
+      "mutators": ["thickfog", "giants", "vampiric"],
+      "shardBonus": 3
+    }
+  ]
+}

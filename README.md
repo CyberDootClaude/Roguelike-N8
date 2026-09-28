@@ -35,12 +35,12 @@ Three.js is vendored in `vendor/`, so the game runs offline.
 
 ## What's in it
 
-- **7 characters**, each with a different starting weapon and perk.
-- **13 weapons**: Bonk Hammer, Hunter Bow, Ember Staff, Storm Rod, Frost Aura, Orbit Blades, Boomerang, Toxic Flask, Revolver, Sunbeam, Sky Hammer, Bone Mines, Chakram Nova.
+- **8 characters**, each with a different starting weapon and perk.
+- **15 weapons**: Bonk Hammer, Hunter Bow, Ember Staff, Storm Rod, Frost Aura, Orbit Blades, Boomerang, Toxic Flask, Revolver, Sunbeam, Sky Hammer, Bone Mines, Chakram Nova, Prism Scatter, Guardian Totem.
   - You hold up to 4 at once.
   - Each level-up rolls random stat upgrades, and upgrade rarity (Common → Legendary, affected by luck) sets how big they are.
 - **17 tomes**, up to 4 held. They are passive stat scalers, and one of them is the Cursed Tome, which trades difficulty for rewards.
-- **27 items** across 5 rarities. Examples: Volatile Core explosions, Storm Link chain lightning, Frost Charm freezes, and Phoenix Feather, which revives you once.
+- **32 items** across 5 rarities. Examples: Volatile Core explosions, Storm Link chain lightning, Frost Charm freezes, and Phoenix Feather, which revives you once.
 - **Map features**:
   - Gold chests, and their price goes up with each one you open.
   - Charge shrines (stand inside the ring), plus golden ones.
@@ -57,6 +57,16 @@ Three.js is vendored in `vendor/`, so the game runs offline.
   - The screen pulses red when your HP is low.
   - One-time tips appear for new players.
   - The pause, death and victory screens show your build.
+
+### Modes and updates (v1.1)
+
+- **Daily Challenge:** one seed per day. Everyone gets the same hero, realms and two mutators, and your best score is kept.
+- **Weekly Event:** three mutators that rotate every Monday, with bonus Soul Shards. A dated event in `events.json` replaces it with no code change.
+- **14 mutators**, e.g. Blood Moon, Glass Cannon, Moon Gravity, Gold Rush, Chain Reaction and Land of Giants.
+- **Realm variants:** each realm slot can hold alternates. **Crystal Caverns** (with crystal geysers and the boss **Prismatrix, the Crystal Queen**) can replace the Hollow Graveyard.
+- **Patch notes:** the **What's New** screen appears once after each update, and NEW badges mark fresh content.
+
+See **[CONTENT_UPDATES.md](CONTENT_UPDATES.md)** for how to run live events and ship content patches.
 
 ### Realms, monsters and bosses
 

@@ -283,6 +283,33 @@ export class WeaponSystem {
         }
         return true;
       }
+      case 'shotgun': {
+        const target = this.nearest(14);
+        if (!target) return false;
+        const base = Math.atan2(target.x - px, target.z - pz);
+        const ty = target.y + target.height * 0.5;
+        const pitch = Math.atan2(ty - py, Math.hypot(target.x - px, target.z - pz));
+        const spread = 0.75;
+        for (let i = 0; i < s.count; i++) {
+          const a = base + (s.count === 1 ? 0 : (i / (s.count - 1) - 0.5) * spread) + rand(-0.04, 0.04);
+          const sp = s.speed * rand(0.9, 1.1);
+          C.spawnProjectile({
+            kind: 'shard', x: px, y: py, z: pz,
+            vx: Math.sin(a) * Math.cos(pitch) * sp, vy: Math.sin(pitch) * sp, vz: Math.cos(a) * Math.cos(pitch) * sp,
+            dmg: s.damage, pierce: s.pierce, life: s.duration, crit: s.crit, kb: s.kb, radius: 0.45 * s.size, size: s.size,
+          });
+        }
+        game.fx.burst(px + Math.sin(base), py, pz + Math.cos(base), 0xb8e8ff, 6, 4, 0.25);
+        game.audio.play('shoot');
+        return true;
+      }
+      case 'turret': {
+        for (let i = 0; i < s.count; i++) {
+          const a = p.facing + Math.PI + (i - (s.count - 1) / 2) * 1.1;
+          C.addTurret(p.x + Math.sin(a) * 2, p.z + Math.cos(a) * 2, s.duration, s.damage, 0.6, s.speed, s.pierce, s.crit, s.kb);
+        }
+        return true;
+      }
       case 'nova': {
         const off = Math.random() * TAU;
         for (let i = 0; i < s.count; i++) {

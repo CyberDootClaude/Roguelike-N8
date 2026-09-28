@@ -7,6 +7,7 @@ const THEMES = {
   dunes: { root: 50, scale: [0, 1, 4, 5, 7, 8, 10], bpm: 104, prog: [0, 1, 0, 5], lead: 'sawtooth', bass: 'triangle', drums: 1 },
   graveyard: { root: 45, scale: [0, 2, 3, 5, 7, 8, 11], bpm: 92, prog: [0, 5, 3, 4], lead: 'square', bass: 'sine', drums: 1 },
   tundra: { root: 52, scale: [0, 2, 3, 5, 7, 9, 10], bpm: 98, prog: [0, 3, 5, 4], lead: 'sine', bass: 'triangle', drums: 1 },
+  crystal: { root: 49, scale: [0, 2, 4, 6, 7, 9, 11], bpm: 108, prog: [0, 5, 3, 6], lead: 'sine', bass: 'triangle', drums: 1 },
   caldera: { root: 42, scale: [0, 2, 3, 5, 7, 8, 10], bpm: 132, prog: [0, 5, 6, 4], lead: 'sawtooth', bass: 'sawtooth', drums: 2 },
 };
 

@@ -87,7 +87,7 @@ export const WEAPONS = {
   revolver: {
     name: 'Revolver', icon: '🔫', kind: 'projectile',
     desc: 'Rapid, high-crit shots at the nearest target.',
-    base: { damage: 12, cooldown: 0.5, count: 1, size: 0.8, speed: 48, pierce: 1, duration: 0.8, crit: 0.15, knockback: 0.3 },
+    base: { damage: 10, cooldown: 0.5, count: 1, size: 0.8, speed: 48, pierce: 1, duration: 0.8, crit: 0.15, knockback: 0.3 },
     ups: { damage: 4, cooldown: 3, count: 2, pierce: 1, crit: 3 },
     proj: 'bullet',
   },
@@ -115,6 +115,18 @@ export const WEAPONS = {
     base: { damage: 8, cooldown: 1.9, count: 6, size: 1, speed: 20, pierce: 1, duration: 0.9, crit: 0, knockback: 0.5 },
     ups: { damage: 4, cooldown: 3, count: 3, pierce: 2, duration: 1 },
     proj: 'disc',
+  },
+  prism: {
+    name: 'Prism Scatter', icon: '🔷', kind: 'shotgun', added: '1.1.0',
+    desc: 'Blasts a cone of crystal shards at close range.',
+    base: { damage: 7, cooldown: 0.95, count: 4, size: 1, speed: 26, pierce: 0, duration: 0.55, crit: 0.05, knockback: 0.8 },
+    ups: { damage: 4, cooldown: 3, count: 3, pierce: 1, duration: 1, crit: 1 },
+  },
+  totem: {
+    name: 'Guardian Totem', icon: '🗿', kind: 'turret', added: '1.1.0',
+    desc: 'Plants a totem that shoots nearby enemies for a while.',
+    base: { damage: 7, cooldown: 6, count: 1, size: 1, speed: 30, pierce: 0, duration: 6, crit: 0, knockback: 0.3 },
+    ups: { damage: 4, cooldown: 2, count: 1, pierce: 1 },
   },
 };
 
@@ -171,6 +183,12 @@ export const ITEMS = {
   phoenix: { name: 'Phoenix Feather', icon: '🐦‍🔥', rarity: 4, stats: { revives: 1 }, desc: 'Revive once at full HP' },
   echo: { name: 'Echo Gem', icon: '💎', rarity: 4, stats: { projectiles: 1, damage: 0.1 }, desc: '+1 Projectile, +10% Damage' },
   soul: { name: 'Soul Harvester', icon: '👻', rarity: 4, stats: { soulHarvest: 1 }, desc: '+1% damage per 100 kills this run' },
+  // Patch 1.1
+  geodecharm: { name: 'Geode Charm', icon: '🪨', rarity: 1, added: '1.1.0', stats: { luck: 0.08, goldGain: 0.1 }, desc: '+8% Luck, +10% Gold Gain' },
+  shardmail: { name: 'Shard Mail', icon: '🥋', rarity: 1, added: '1.1.0', stats: { thorns: 40, armor: 0.03 }, desc: 'Deal 40 damage to attackers, +3% Armor' },
+  prismlens: { name: 'Prism Lens', icon: '🔮', rarity: 2, added: '1.1.0', stats: { crit: 0.06, critDmg: 0.2 }, desc: '+6% Crit, +20% Crit Damage' },
+  crystalheart: { name: 'Crystal Heart', icon: '💜', rarity: 3, added: '1.1.0', stats: { maxHp: 40, armor: 0.04, regen: 0.5 }, desc: '+40 Max HP, +4% Armor, +0.5 Regen' },
+  resonator: { name: 'Resonance Core', icon: '🎐', rarity: 4, added: '1.1.0', stats: { attackSpeed: 0.15, duration: 0.15, area: 0.1 }, desc: '+15% Attack Speed, +15% Duration, +10% Size' },
   midas: { name: 'Midas Glove', icon: '🧤', rarity: 4, stats: { goldGain: 0.5, chestDiscount: 0.25 }, desc: '+50% Gold, chests 25% cheaper' },
 };
 
@@ -242,5 +260,10 @@ export const CHARACTERS = [
     id: 'alchemist', name: 'Grum the Alchemist', weapon: 'flask', color: 0x5a7a3a, accent: 0xa0ff50,
     perk: '+20% Duration, +1 Regen', stats: { duration: 0.2, regen: 1 },
     hat: 'goggles',
+  },
+  {
+    id: 'quartz', name: 'Quartz the Crystal Golem', weapon: 'prism', color: 0x7a5ac8, accent: 0x6ad8ff, added: '1.1.0',
+    perk: '+8% Armor, +25 Max HP, -5% Move Speed', stats: { armor: 0.08, maxHp: 25, speed: -0.05 },
+    hat: 'crystal',
   },
 ];

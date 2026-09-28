@@ -418,6 +418,89 @@ export const ENEMIES = {
       ...glowEyes(0.85, 0.52, 0.18, 0.08, 0xff4411),
     ],
   }),
+
+  // ───────────── Crystal Caverns (patch 1.1) ─────────────
+  crystalcrawler: def('chaser', {
+    name: 'Crystal Crawler', added: '1.1.0',
+    material: { emissive: 0x1a0a30 },
+    parts: [
+      { shape: 'sphere', size: [0.5], pos: [0, 0.45, 0], scale: [1, 0.7, 1.2], color: 0x5a4a8a },
+      { shape: 'oct', size: [0.25], pos: [0, 0.9, -0.1], scale: [0.6, 1.6, 0.6], color: 0xb58aff },
+      { shape: 'oct', size: [0.2], pos: [0.25, 0.85, -0.3], scale: [0.6, 1.4, 0.6], rot: [0, 0, -0.4], color: 0x8ad8ff },
+      { shape: 'oct', size: [0.2], pos: [-0.25, 0.85, -0.3], scale: [0.6, 1.4, 0.6], rot: [0, 0, 0.4], color: 0xff8ae0 },
+      { shape: 'box', size: [1.1, 0.06, 0.08], pos: [0, 0.2, 0.15], color: 0x2a2244 },
+      { shape: 'box', size: [1.1, 0.06, 0.08], pos: [0, 0.2, -0.2], color: 0x2a2244 },
+      ...glowEyes(0.55, 0.55, 0.14, 0.06, 0x6affd8),
+    ],
+  }),
+  gembeetle: def('charger', {
+    name: 'Gem Beetle', added: '1.1.0', speed: 3.4,
+    material: { emissive: 0x100820 },
+    parts: [
+      { shape: 'sphere', size: [0.6], pos: [0, 0.5, 0], scale: [1, 0.6, 1.3], color: 0x2a6a8a },
+      { shape: 'oct', size: [0.45], pos: [0, 0.85, -0.1], scale: [1.4, 0.5, 1.6], color: 0x6ad8ff },
+      { shape: 'cone', size: [0.12, 0.7, 5], seg: 5, pos: [0, 0.6, 0.95], rot: [1.3, 0, 0], color: 0xd8f6ff },
+      { shape: 'box', size: [1.4, 0.06, 0.1], pos: [0, 0.2, 0.3], color: 0x1a2a3a },
+      { shape: 'box', size: [1.4, 0.06, 0.1], pos: [0, 0.2, -0.3], color: 0x1a2a3a },
+      ...glowEyes(0.6, 0.72, 0.18, 0.06, 0xffffff),
+    ],
+  }),
+  prismwisp: def('flier', {
+    name: 'Prism Wisp', added: '1.1.0', hover: 2.8, shoots: true, range: 16, fireCd: 2.6, projSpeed: 11, projColor: 0xff8ae0,
+    material: { emissive: 0x3a1a5a },
+    parts: [
+      { shape: 'tetra', size: [0.55], pos: [0, 0, 0], color: 0xe0c8ff },
+      { shape: 'tetra', size: [0.55], pos: [0, 0, 0], rot: [Math.PI, 0, 0], color: 0xb58aff },
+      { shape: 'torus', size: [0.6, 0.04], pos: [0, 0, 0], rot: [Math.PI / 2, 0, 0], color: 0x8ad8ff },
+      ...glowEyes(0.1, 0.35, 0.1, 0.05, 0x1a0a30),
+    ],
+  }),
+  shardling: def('splitter', {
+    name: 'Shardling', added: '1.1.0', splitInto: 'shardlet', splitCount: 4,
+    material: { emissive: 0x200a30 },
+    parts: [
+      { shape: 'ico', size: [0.8], pos: [0, 0.85, 0], color: 0x8a5ac8 },
+      { shape: 'oct', size: [0.35], pos: [0.5, 1.3, 0], scale: [0.6, 1.5, 0.6], rot: [0, 0, -0.6], color: 0xff8ae0 },
+      { shape: 'oct', size: [0.35], pos: [-0.5, 1.3, 0], scale: [0.6, 1.5, 0.6], rot: [0, 0, 0.6], color: 0x8ad8ff },
+      { shape: 'oct', size: [0.35], pos: [0, 1.6, -0.2], scale: [0.6, 1.5, 0.6], color: 0xb58aff },
+      ...glowEyes(1.0, 0.72, 0.22, 0.09, 0xffffff),
+    ],
+  }),
+  shardlet: def('runner', {
+    name: 'Shardlet', added: '1.1.0', hp: 5, radius: 0.35, xp: 0,
+    material: { emissive: 0x200a30 },
+    parts: [
+      { shape: 'oct', size: [0.35], pos: [0, 0.4, 0], scale: [0.8, 1.3, 0.8], color: 0xc89aff },
+      ...glowEyes(0.45, 0.25, 0.08, 0.04, 0xffffff),
+    ],
+  }),
+  mirrormage: def('teleporter', {
+    name: 'Mirror Mage', added: '1.1.0', shoots: true, range: 17, fireCd: 2.4, projSpeed: 13, projColor: 0x8ad8ff, blinkCd: 3.5, burst: 3,
+    parts: [
+      { shape: 'cone', size: [0.55, 1.5, 6], seg: 6, pos: [0, 0.75, 0], color: 0x3a2a6a },
+      { shape: 'sphere', size: [0.3], pos: [0, 1.7, 0], color: 0xd8d0f0 },
+      { shape: 'cone', size: [0.35, 0.7, 6], seg: 6, pos: [0, 2.2, 0], color: 0x3a2a6a },
+      { shape: 'box', size: [0.5, 0.7, 0.05], pos: [0.55, 1.2, 0.2], color: 0xc8f0ff },
+      { shape: 'box', size: [0.56, 0.76, 0.03], pos: [0.55, 1.2, 0.18], color: 0x8a6ad8 },
+      ...glowEyes(1.72, 0.26, 0.1, 0.05, 0x6affd8),
+    ],
+  }),
+  geodegolem: def('tank', {
+    name: 'Geode Golem', added: '1.1.0', hp: 100,
+    material: { emissive: 0x100820 },
+    parts: [
+      { shape: 'dodeca', size: [1.1], pos: [0, 1.4, 0], color: 0x4a4460 },
+      { shape: 'oct', size: [0.5], pos: [0, 1.5, 0.95], scale: [1, 1.4, 0.5], color: 0xc46bff },
+      { shape: 'oct', size: [0.35], pos: [0.5, 1.9, 0.75], scale: [0.7, 1.3, 0.5], color: 0x6ad8ff },
+      { shape: 'oct', size: [0.35], pos: [-0.5, 1.1, 0.8], scale: [0.7, 1.3, 0.5], color: 0xff8ae0 },
+      { shape: 'dodeca', size: [0.5], pos: [0, 2.6, 0.1], color: 0x5a5474 },
+      { shape: 'dodeca', size: [0.6], pos: [-1.3, 1.3, 0.2], color: 0x3e3854 },
+      { shape: 'dodeca', size: [0.6], pos: [1.3, 1.3, 0.2], color: 0x3e3854 },
+      { shape: 'box', size: [0.5, 0.7, 0.5], pos: [-0.45, 0.35, 0], color: 0x2e2a40 },
+      { shape: 'box', size: [0.5, 0.7, 0.5], pos: [0.45, 0.35, 0], color: 0x2e2a40 },
+      ...glowEyes(2.65, 0.5, 0.18, 0.08, 0xb58aff),
+    ],
+  }),
 };
 
 for (const [id, e] of Object.entries(ENEMIES)) e.id = id;

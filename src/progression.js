@@ -1,6 +1,7 @@
 // Level-up choices, chest loot and shrine rewards.
 import { WEAPONS, TOMES, ITEMS, RARITIES, SHRINE_BUFFS, WEAPON_UPGRADES, rollRarity, fmtStat } from './data/loot.js';
 import { shuffle } from './util.js';
+import { GAME_VERSION } from './data/patches.js';
 
 export const MAX_WEAPONS = 4;
 export const MAX_TOMES = 4;
@@ -43,6 +44,7 @@ function describe(game, p, rarity) {
   if (p.type === 'weapon-new') {
     const d = WEAPONS[p.id];
     c.title = d.name; c.icon = d.icon; c.tag = 'New Weapon';
+    c.isNew = d.added === GAME_VERSION;
     c.lines = [d.desc];
     c.rarity = RARITIES[0];
   } else if (p.type === 'weapon-up') {
