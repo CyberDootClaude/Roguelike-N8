@@ -149,6 +149,7 @@ export const CRYSTAL_CAVERNS = {
   ground: { low: 0x4a4470, high: 0x7a70a8, steep: 0x2e2848, accent: 0x6a4aa0 },
   terrain: { amp: 9, freq: 0.013, ridged: true, flatten: 0 },
   hazard: 'geysers',
+  eruptions: { every: [5, 8], count: 3, radius: 2.3, warn: 1.4, color: 0xc46bff, fx: 0xd8b0ff, name: 'Crystal Geyser', dmg: 9 },
   props: [
     { kind: 'crystalcluster', count: 130, collide: 0.9, scale: [0.7, 1.8] },
     { kind: 'stalagmite', count: 110, collide: 0.8, scale: [0.8, 2.0] },
@@ -165,14 +166,120 @@ export const CRYSTAL_CAVERNS = {
   ],
 };
 
+export const MUSHROOM_GROVE = {
+  id: 'fungal', added: '1.2.0',
+  name: 'Mushroom Grove', subtitle: 'Breathe shallow. The spores are listening.',
+  boss: 'sporemother', mult: 1, bossMult: 1,
+  sky: 0x2a4a5a, fog: 0x4a6a6a, fogNear: 35, fogFar: 135,
+  hemi: [0xd8f0ff, 0x3a2a4a, 1.1], sun: [0xf0e0ff, 1.4],
+  ground: { low: 0x3a6a4a, high: 0x6a8a5a, steep: 0x4a3a3a, accent: 0x7a5a9a },
+  terrain: { amp: 7, freq: 0.013, ridged: false, flatten: 0 },
+  hazard: 'spores',
+  eruptions: { every: [6, 9], count: 3, radius: 3, warn: 1.6, color: 0xb87ae0, fx: 0xd8b0ff, name: 'Spore Burst', dmg: 6, zone: { dur: 4, dps: 3, slow: 0.35, color: 0xa86ad8 } },
+  props: [
+    { kind: 'giantshroom', count: 90, collide: 0.8, scale: [0.8, 1.8] },
+    { kind: 'blueshroom', count: 70, collide: 0.7, scale: [0.8, 1.6] },
+    { kind: 'mushroom', count: 120, collide: 0, scale: [0.8, 1.6] },
+    { kind: 'puffball', count: 60, collide: 0, scale: [0.6, 1.3] },
+    { kind: 'rock', count: 40, collide: 1.2, scale: [0.6, 1.5] },
+  ],
+  roster: [
+    { id: 'sporeling', weight: 10, from: 0 },
+    { id: 'fungalimp', weight: 6, from: 0.5 },
+    { id: 'glowmoth', weight: 5, from: 1.5 },
+    { id: 'myconid', weight: 3, from: 2.5 },
+    { id: 'puffcap', weight: 3, from: 3.5 },
+    { id: 'shroombrute', weight: 2, from: 5 },
+  ],
+};
+
+export const SUNKEN_OASIS = {
+  id: 'oasis', added: '1.2.0',
+  name: 'Sunken Oasis', subtitle: 'The tide came in and never left',
+  boss: 'leviathrax', mult: 2.4, bossMult: 2.3,
+  sky: 0x8ad8f0, fog: 0xa8e0e8, fogNear: 50, fogFar: 165,
+  hemi: [0xf0fbff, 0x3a6a6a, 1.15], sun: [0xfff2d8, 1.7],
+  ground: { low: 0xd8c890, high: 0xa8c870, steep: 0x8a7a5a, accent: 0x6ab88a },
+  terrain: { amp: 6, freq: 0.012, ridged: false, flatten: 0.1 },
+  hazard: 'shallows',
+  props: [
+    { kind: 'palm', count: 90, collide: 0.6, scale: [0.9, 1.4] },
+    { kind: 'reeds', count: 120, collide: 0, scale: [0.8, 1.4] },
+    { kind: 'ruinpillar', count: 40, collide: 0.8, scale: [0.8, 1.5] },
+    { kind: 'coral', count: 60, collide: 0.6, scale: [0.7, 1.4] },
+    { kind: 'rock', count: 40, collide: 1.2, scale: [0.6, 1.5] },
+  ],
+  roster: [
+    { id: 'bogfrog', weight: 9, from: 0 },
+    { id: 'reefcrab', weight: 7, from: 0 },
+    { id: 'gull', weight: 5, from: 1 },
+    { id: 'nagaarcher', weight: 3, from: 2 },
+    { id: 'puffer', weight: 3, from: 3 },
+    { id: 'coralgolem', weight: 2, from: 4.5 },
+  ],
+};
+
+export const SKY_ISLES = {
+  id: 'sky', added: '1.2.0',
+  name: 'Sky Isles', subtitle: 'Mind the gap. And the wind.',
+  boss: 'zephyra', mult: 12, bossMult: 10,
+  sky: 0x7ab8f0, fog: 0xc8e0f8, fogNear: 45, fogFar: 160,
+  hemi: [0xffffff, 0x6a8ab0, 1.2], sun: [0xfff8e8, 1.7],
+  ground: { low: 0x6ab85a, high: 0x9ad87a, steep: 0x8a8a8a, accent: 0xd8e8f0 },
+  terrain: { amp: 14, freq: 0.011, ridged: true, flatten: 0 },
+  hazard: 'gusts',
+  props: [
+    { kind: 'cloudpuff', count: 60, collide: 0, scale: [1, 2.2] },
+    { kind: 'skyrock', count: 70, collide: 1.2, scale: [0.7, 1.8] },
+    { kind: 'windmill', count: 14, collide: 1.0, scale: [1, 1.3] },
+    { kind: 'banner', count: 40, collide: 0.2, scale: [1, 1.3] },
+    { kind: 'oak', count: 60, collide: 1.0, scale: [0.8, 1.3] },
+  ],
+  roster: [
+    { id: 'harpy', weight: 9, from: 0 },
+    { id: 'skyram', weight: 7, from: 0 },
+    { id: 'cloudsprite', weight: 5, from: 1 },
+    { id: 'windarcher', weight: 4, from: 2 },
+    { id: 'stormcloud', weight: 3, from: 3 },
+    { id: 'stonesentinel', weight: 2, from: 4.5 },
+  ],
+};
+
+export const CLOCKWORK_FOUNDRY = {
+  id: 'foundry', added: '1.2.0',
+  name: 'Clockwork Foundry', subtitle: 'Every gear turns toward you',
+  boss: 'gearlord', mult: 25, bossMult: 19,
+  sky: 0x5a4636, fog: 0x7a6450, fogNear: 34, fogFar: 140,
+  hemi: [0xffe0b8, 0x4a3828, 1.3], sun: [0xffd090, 1.6],
+  ground: { low: 0x6a6258, high: 0x8a8070, steep: 0x3a3430, accent: 0xa8823a },
+  terrain: { amp: 8, freq: 0.012, ridged: true, flatten: 0.15 },
+  hazard: 'steam',
+  eruptions: { every: [4, 6], count: 4, radius: 2.2, warn: 1.2, color: 0xff8a3a, fx: 0xf2f2f2, name: 'Steam Vent', dmg: 11 },
+  props: [
+    { kind: 'gearpile', count: 70, collide: 1.0, scale: [0.8, 1.6] },
+    { kind: 'smokestack', count: 30, collide: 1.0, scale: [0.9, 1.4] },
+    { kind: 'pipe', count: 60, collide: 0.5, scale: [0.8, 1.4] },
+    { kind: 'crate', count: 80, collide: 0.8, scale: [0.7, 1.3] },
+    { kind: 'vent', count: 40, collide: 0, scale: [1, 1.4] },
+  ],
+  roster: [
+    { id: 'cogcrawler', weight: 9, from: 0 },
+    { id: 'sparkdrone', weight: 7, from: 0 },
+    { id: 'gearhound', weight: 5, from: 1 },
+    { id: 'rivetgunner', weight: 4, from: 2 },
+    { id: 'boilerbot', weight: 4, from: 3 },
+    { id: 'juggernaut', weight: 2, from: 4.5 },
+  ],
+};
+
 // Each realm slot lists the realms that can appear there. A run picks one per slot,
 // so adding a variant to a slot freshens runs without lengthening them.
 export const STAGE_SLOTS = [
-  [STAGES[0]],
-  [STAGES[1]],
+  [STAGES[0], MUSHROOM_GROVE],
+  [STAGES[1], SUNKEN_OASIS],
   [STAGES[2], CRYSTAL_CAVERNS],
-  [STAGES[3]],
-  [STAGES[4]],
+  [STAGES[3], SKY_ISLES],
+  [STAGES[4], CLOCKWORK_FOUNDRY],
 ];
 export const REALM_COUNT = STAGE_SLOTS.length;
 
@@ -325,5 +432,77 @@ export const PROPS = {
     { shape: 'sphere', size: [0.32], pos: [0, 0.72, 0], scale: [1, 0.55, 1], color: 0x6affd8 },
     { shape: 'cyl', size: [0.06, 0.09, 0.45], pos: [0.3, 0.22, 0.1], color: 0xd8d0f0 },
     { shape: 'sphere', size: [0.2], pos: [0.3, 0.46, 0.1], scale: [1, 0.55, 1], color: 0xff8ae0 },
+  ],
+  giantshroom: [
+    { shape: 'cyl', size: [0.3, 0.45, 3, 8], pos: [0, 1.5, 0], color: 0xf2e6d0 },
+    { shape: 'sphere', size: [1.6], pos: [0, 3.1, 0], scale: [1, 0.5, 1], color: 0xd8342c, seg: 10 },
+    { shape: 'sphere', size: [0.25], pos: [0.7, 3.6, 0.5], color: 0xffffff },
+    { shape: 'sphere', size: [0.2], pos: [-0.6, 3.55, -0.4], color: 0xffffff },
+    { shape: 'sphere', size: [0.22], pos: [0.1, 3.75, -0.7], color: 0xffffff },
+  ],
+  blueshroom: [
+    { shape: 'cyl', size: [0.25, 0.35, 2.4, 8], pos: [0, 1.2, 0], color: 0xd8e8f0 },
+    { shape: 'cone', size: [1.4, 1.2, 9], seg: 9, pos: [0, 2.8, 0], color: 0x3a8ad8 },
+    { shape: 'cyl', size: [0.15, 0.2, 1.4, 6], pos: [0.9, 0.7, 0.3], color: 0xd8e8f0 },
+    { shape: 'cone', size: [0.6, 0.6, 8], seg: 8, pos: [0.9, 1.6, 0.3], color: 0x6affd8 },
+  ],
+  puffball: [
+    { shape: 'sphere', size: [0.6], pos: [0, 0.5, 0], color: 0xe8dcc8, seg: 8 },
+    { shape: 'sphere', size: [0.35], pos: [0.6, 0.3, 0.2], color: 0xd8ccb8, seg: 8 },
+  ],
+  reeds: [
+    { shape: 'cyl', size: [0.04, 0.06, 1.8, 4], seg: 4, pos: [0, 0.9, 0], rot: [0, 0, 0.1], color: 0x6a9a4a },
+    { shape: 'cyl', size: [0.04, 0.06, 1.5, 4], seg: 4, pos: [0.2, 0.75, 0.1], rot: [0.1, 0, -0.15], color: 0x7aaa5a },
+    { shape: 'cyl', size: [0.08, 0.08, 0.4, 5], seg: 5, pos: [0.04, 1.7, 0], color: 0x6a4a2a },
+  ],
+  ruinpillar: [
+    { shape: 'cyl', size: [0.6, 0.7, 3.5, 8], pos: [0, 1.75, 0], color: 0xd8ccb0 },
+    { shape: 'box', size: [1.6, 0.4, 1.6], pos: [0, 3.6, 0], color: 0xc8bca0 },
+    { shape: 'box', size: [1.6, 0.4, 1.6], pos: [0, 0.2, 0], color: 0xb8ac90 },
+  ],
+  coral: [
+    { shape: 'cyl', size: [0.15, 0.25, 1.4, 5], seg: 5, pos: [0, 0.7, 0], color: 0xff7a8a },
+    { shape: 'cyl', size: [0.1, 0.15, 1.0, 5], seg: 5, pos: [0.35, 1.0, 0], rot: [0, 0, -0.6], color: 0xff8a6a },
+    { shape: 'cyl', size: [0.1, 0.15, 1.0, 5], seg: 5, pos: [-0.3, 1.1, 0.1], rot: [0.2, 0, 0.6], color: 0xd86ab8 },
+    { shape: 'sphere', size: [0.18], pos: [0, 1.45, 0], color: 0xffb0c0 },
+  ],
+  cloudpuff: [
+    { shape: 'ico', size: [1.2], detail: 1, pos: [0, 0.6, 0], color: 0xffffff },
+    { shape: 'ico', size: [0.9], detail: 1, pos: [1.1, 0.4, 0.2], color: 0xf2f8ff },
+    { shape: 'ico', size: [0.8], detail: 1, pos: [-1.0, 0.35, -0.2], color: 0xf2f8ff },
+  ],
+  skyrock: [
+    { shape: 'dodeca', size: [1.3], pos: [0, 0.7, 0], scale: [1.1, 0.9, 1], color: 0x9a9488 },
+    { shape: 'box', size: [2.0, 0.3, 1.8], pos: [0, 1.35, 0], rot: [0, 0.4, 0], color: 0x6ab85a },
+  ],
+  windmill: [
+    { shape: 'cyl', size: [0.6, 1.0, 5, 8], pos: [0, 2.5, 0], color: 0xe8dcc8 },
+    { shape: 'cone', size: [1.1, 1.4, 8], seg: 8, pos: [0, 5.7, 0], color: 0xb84a3a },
+    { shape: 'box', size: [0.25, 4.2, 0.08], pos: [0, 4.6, 0.75], rot: [0, 0, 0.6], color: 0xf2f2f2 },
+    { shape: 'box', size: [0.25, 4.2, 0.08], pos: [0, 4.6, 0.75], rot: [0, 0, -0.97], color: 0xf2f2f2 },
+  ],
+  banner: [
+    { shape: 'cyl', size: [0.06, 0.06, 3.2, 5], seg: 5, pos: [0, 1.6, 0], color: 0x6a4a2a },
+    { shape: 'box', size: [0.05, 0.9, 1.2], pos: [0, 2.6, 0.6], color: 0x3a6ad8 },
+  ],
+  gearpile: [
+    { shape: 'torus', size: [1.0, 0.25], pos: [0, 0.3, 0], rot: [Math.PI / 2, 0, 0], color: 0xb8862a, seg: 12 },
+    { shape: 'torus', size: [0.7, 0.2], pos: [0.6, 0.75, 0.3], rot: [1.2, 0.3, 0], color: 0x8a8a92, seg: 10 },
+    { shape: 'cyl', size: [0.3, 0.3, 0.5, 6], seg: 6, pos: [0, 0.35, 0], color: 0x5a5a62 },
+  ],
+  smokestack: [
+    { shape: 'box', size: [2.2, 1.8, 2.2], pos: [0, 0.9, 0], color: 0x6a4a3a },
+    { shape: 'cyl', size: [0.5, 0.6, 6, 8], pos: [0, 4.6, 0], color: 0x4a3a32 },
+    { shape: 'cyl', size: [0.65, 0.65, 0.3, 8], pos: [0, 7.5, 0], color: 0x2a2220 },
+  ],
+  pipe: [
+    { shape: 'cyl', size: [0.3, 0.3, 3, 8], pos: [0, 0.4, 0], rot: [0, 0, Math.PI / 2], color: 0x8a8a92 },
+    { shape: 'cyl', size: [0.4, 0.4, 0.3, 8], pos: [1.4, 0.4, 0], rot: [0, 0, Math.PI / 2], color: 0xb8862a },
+    { shape: 'cyl', size: [0.3, 0.3, 1.4, 8], pos: [-1.5, 1.0, 0], color: 0x8a8a92 },
+  ],
+  crate: [
+    { shape: 'box', size: [1.2, 1.2, 1.2], pos: [0, 0.6, 0], color: 0x8a6a3a },
+    { shape: 'box', size: [1.25, 0.12, 1.25], pos: [0, 1.15, 0], color: 0x5a4a32 },
+    { shape: 'box', size: [1.25, 0.12, 1.25], pos: [0, 0.06, 0], color: 0x5a4a32 },
   ],
 };

@@ -2,6 +2,7 @@
 import * as THREE from 'three';
 import { buildMesh, glowEyes } from './models.js';
 import { clamp, rand, TAU } from './util.js';
+import { EXTRA_BOSSES, EXTRA_ATTACK_NAMES } from './bossesExtra.js';
 import { PLAY_HALF } from './world.js';
 
 // A timed action: events fire at their `at` time, `tick` runs every frame.
@@ -11,6 +12,7 @@ function action(dur, events = [], tick = null) {
 const ev = (at, fn) => ({ at, fn });
 
 const ATTACK_NAMES = {
+  ...EXTRA_ATTACK_NAMES,
   roots: 'Root Eruption', seeds: 'Seed Barrage', slam: 'Ground Slam', saplings: 'Call of the Grove', thornring: 'Thorn Ring',
   spiral: 'Sun Spiral', curse: 'Curse Beams', sandport: 'Sandstorm Step', mummies: 'Raise the Servants', sunfall: 'Sunfall',
   skulls: 'Homing Skulls', hands: 'Grave Hands', soulnova: 'Soul Nova', raise: 'Raise Dead', deathstar: 'Death Star',
@@ -251,6 +253,7 @@ export const BOSSES = {
     model: crystalQueenModel, radius: 2.0, height: 7, speed: 3.6, hover: 1.4, hp: 4400,
     attacks: ['prismbeams', 'shardnova', 'cage', 'shatter', 'mirror'],
   },
+  ...EXTRA_BOSSES,
 };
 
 export class Boss {
@@ -329,7 +332,7 @@ export class Boss {
     // movement while not busy
     let move = !this.cur || this.cur.mobile;
     if (move && !this.airborne) {
-      const want = def.hover > 0 ? 9 : 4;
+      const want = def.hover > 0 ? 9 : def.radius + 3.5; // keep big models from smothering the camera
       const spd = def.speed * (this.phase === 2 ? 1.25 : 1) * (e.slowT > 0 ? 0.8 : 1);
       if (dist > want) {
         e.x += (dx / dist) * spd * dt;
@@ -421,9 +424,131 @@ export class Boss {
 
   // helpers
   aimAngle() { const p = this.game.player; return Math.atan2(p.x - this.e.x, p.z - this.e.z); }
+
+  // ───── reusable attack patterns (used by data-driven bosses via def.moves) ─────
+  mvCircles({ n = 8, interval = 0.25, r = 2.6, warn = 1.1, dmg = 18, color = 0xff3030, fx, onPlayer = 3, spread = 12, name, zone }) {
+    const g = this.game, H = g.hazards, p = g.player;
+    const evs = [];
+    for (let i = 0; i < n; i++) evs.push(ev(0.2 + i * interval, () => {
+      const a = Math.random() * TAU, d = i < onPlayer ? rand(0, 1.5) : rand(3, spread);
+      const x = p.x + Math.sin(a) * d, z = p.z + Math.cos(a) * d;
+      H.circle(x, z, r, warn, dmg * this.dmg, color, {
+        fxColor: fx ?? color, source: name,
+        onBoom: zone ? () => H.zone(x, z, r, zone.dur, (zone.dps || 0) * this.dmg, zone.color ?? color, zone.slow || 0) : undefined,
+      });
+    }));
+    return action(0.3 + n * interval + warn + 0.3, evs);
+  }
+
+  mvRadial({ waves = 3, count = 20, speed = 9, dmg = 12, color = 0xffffff, interval = 0.45, name, size }) {
+    const g = this.game, e = this.e;
+    const a = action(0.4 + waves * interval + 0.5, Array.from({ length: waves }, (_, i) => ev(0.3 + i * interval, () => {
+      g.hazards.radial(e.x, this.mouthY(), e.z, count, speed, dmg * this.dmg, color, i * (Math.PI / count), { source: name, size });
+      g.audio.play('shoot');
+    })));
+    a.mobile = false;
+    return a;
+  }
+
+  mvFan({ volleys = 3, count = 8, spread = 1.1, speed = 13, dmg = 12, color = 0xffffff, interval = 0.45, name }) {
+    const g = this.game, e = this.e;
+    return action(0.4 + volleys * interval + 0.4, Array.from({ length: volleys }, (_, i) => ev(0.3 + i * interval, () => {
+      g.hazards.fan(e.x, this.mouthY(), e.z, this.aimAngle(), count, spread, speed, dmg * this.dmg, color, { source: name });
+      g.audio.play('shoot');
+    })));
+  }
+
+  mvShockwaves({ n = 2, interval = 0.6, speed = 13, dmg = 20, color = 0xffa030, windup = 0.9 }) {
+    const g = this.game, e = this.e;
+    const evs = [];
+    for (let i = 0; i < n; i++) evs.push(ev(windup + i * interval, () => {
+      g.hazards.shockwave(e.x, e.z, speed + i * 2, 32, dmg * this.dmg, color);
+      if (i === 0) { g.ui.shake(0.5); g.fx.explosion(e.x, e.y + 0.5, e.z, 4.5, color); }
+    }));
+    g.hazards.circle(e.x, e.z, 5, windup, 0, color, { silent: true });
+    const a = action(windup + n * interval + 0.6, evs);
+    a.mobile = false;
+    return a;
+  }
+
+  mvLines({ waves = 2, n = 6, len = 42, width = 2.4, warn = 1.0, dmg = 20, color = 0xff3030, interval = 0.9, name, aimed = true }) {
+    const g = this.game, e = this.e;
+    const base = aimed ? this.aimAngle() : Math.random() * TAU;
+    const a = action(0.2 + waves * interval + warn + 0.3, Array.from({ length: waves }, (_, w) => ev(0.1 + w * interval, () => {
+      for (let i = 0; i < n; i++) g.hazards.line(e.x, e.z, base + ((i + w * 0.5) / n) * TAU, len, width, warn, dmg * this.dmg, color, { source: name });
+    })));
+    a.mobile = false; a.lockFacing = true;
+    return a;
+  }
+
+  mvSummon({ kinds, n = 10, dist = 12, msg, color = '#ffcf4a' }) {
+    const g = this.game, p = g.player;
+    return action(1.4, [ev(0.5, () => {
+      for (let i = 0; i < n; i++) {
+        const a = (i / n) * TAU;
+        const x = p.x + Math.sin(a) * dist, z = p.z + Math.cos(a) * dist;
+        g.fx.burst(x, g.world.groundAt(x, z) + 0.5, z, 0xffffff, 5, 3);
+        g.enemies.spawn(kinds[i % kinds.length], x, z, { force: true });
+      }
+      if (msg) g.ui.toast(msg, color);
+    })]);
+  }
+
+  mvHoming({ n = 6, dmg = 15, color = 0xffffff, size = 1.5, name }) {
+    const g = this.game, e = this.e;
+    return action(1.6, [ev(0.5, () => {
+      for (let i = 0; i < n; i++) {
+        const a = (i / n) * TAU;
+        g.hazards.bullet(e.x + Math.sin(a) * 2, this.mouthY(), e.z + Math.cos(a) * 2, Math.sin(a) * 7, 2, Math.cos(a) * 7, dmg * this.dmg, color, { homing: 1.5, life: 6.5, size, source: name });
+      }
+      g.audio.play('zap');
+    })]);
+  }
+
+  mvDive({ r = 6.5, dmg = 28, color = 0xff3a1a, name = 'Dive Bomb', wave = 0xffffff }) {
+    const g = this.game, p = g.player, e = this.e;
+    let tx = 0, tz = 0;
+    const a = action(3.0, [
+      ev(0.0, () => { this.airborne = true; e.untargetable = true; }),
+      ev(0.9, () => { tx = p.x; tz = p.z; g.hazards.circle(tx, tz, r, 1.1, dmg * this.dmg, color, { source: name }); }),
+      ev(2.0, () => {
+        e.x = tx; e.z = tz; this.hoverOffset = 0; this.airborne = false; e.untargetable = false;
+        g.hazards.shockwave(tx, tz, 14, 26, 16 * this.dmg, wave);
+        g.ui.shake(0.6);
+      }),
+    ], (dt, t) => {
+      if (t < 0.9) this.hoverOffset = t * 18;
+      else if (t < 2.0) this.hoverOffset = 16 - (t - 0.9) * 2;
+    });
+    a.mobile = false;
+    return a;
+  }
+
+  mvCharge({ len = 30, width = 4.5, dmg = 24, color = 0xffa030, name = 'Charge', times = 1 }) {
+    const g = this.game, e = this.e;
+    let dirX = 0, dirZ = 0, charging = false;
+    const evs = [];
+    for (let k = 0; k < times; k++) {
+      const t0 = k * 1.6;
+      evs.push(ev(t0 + 0.05, () => {
+        const ang = this.aimAngle();
+        dirX = Math.sin(ang); dirZ = Math.cos(ang); this.ry = ang;
+        g.hazards.line(e.x, e.z, ang, len, width, 0.9, dmg * this.dmg, color, { source: name, silent: true });
+      }));
+      evs.push(ev(t0 + 0.95, () => { charging = true; g.ui.shake(0.4); }));
+      evs.push(ev(t0 + 1.6, () => { charging = false; }));
+    }
+    const a = action(times * 1.6 + 0.5, evs, (dt) => {
+      if (charging) { e.x = clamp(e.x + dirX * (len / 0.65) * dt, -PLAY_HALF + 3, PLAY_HALF - 3); e.z = clamp(e.z + dirZ * (len / 0.65) * dt, -PLAY_HALF + 3, PLAY_HALF - 3); if (Math.random() < 0.5) g.fx.burst(e.x, e.y + 0.5, e.z, color, 3, 4); }
+    });
+    a.mobile = false; a.lockFacing = true;
+    return a;
+  }
   mouthY() { return this.e.y + this.def.height * 0.6; }
 
   makeAttack(name) {
+    const move = this.def.moves?.[name];
+    if (move) return move(this, this.phase === 2);
     const g = this.game, H = g.hazards, p = g.player, e = this.e;
     const D = this.dmg;
     const P2 = this.phase === 2;

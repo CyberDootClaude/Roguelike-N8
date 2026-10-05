@@ -48,9 +48,9 @@ Content is data-driven, and most additions are one entry in a data file:
 
 | Add a… | Where | Notes |
 | --- | --- | --- |
-| Monster | `src/data/enemies.js` | Pick an AI archetype (`chaser`, `runner`, `tank`, `ranged`, `flier`, `exploder`, `charger`, `splitter`, `teleporter`), then build the model from primitive parts. |
+| Monster | `src/data/enemies.js` | Quickest: `like(baseId, colorMap, overrides)` re-themes an existing body plan, which is how the 1.2 realms were built. Or | Pick an AI archetype (`chaser`, `runner`, `tank`, `ranged`, `flier`, `exploder`, `charger`, `splitter`, `teleporter`), then build the model from primitive parts. |
 | Realm | `src/data/stages.js` | Add a stage object and list it in a `STAGE_SLOTS` entry. Each run picks one realm per slot, so variants make runs differ without making them longer. |
-| Boss | `src/bosses.js` | Add a model function, a `BOSSES` entry, attack cases in `makeAttack`, and names in `ATTACK_NAMES`. The attacks reuse the telegraph toolkit (`circle`, `line`, `shockwave`, `radial`, `fan`, homing `bullet`, `zone`). |
+| Boss | `src/bossesExtra.js` | Easiest route: a model function plus `moves` built from the reusable patterns `mvCircles`, `mvRadial`, `mvFan`, `mvShockwaves`, `mvLines`, `mvSummon`, `mvHoming`, `mvDive` and `mvCharge`. See Sporemother or Gearlord. Fully custom attacks go in `makeAttack` in `src/bosses.js`. |
 | Weapon | `src/data/loot.js → WEAPONS` | Reuse an existing `kind`, or add a new case in `src/weapons.js → fire()`. |
 | Item / tome / hero | `src/data/loot.js` | Items are just stat bundles, and the effects already wired in include the on-hit procs, thorns and revives. |
 | Mutator | `src/data/mutators.js` | Use the `mods` multipliers or player `stats`. |
@@ -66,7 +66,9 @@ Then:
    node tools/smoke.mjs debug 3    # plays through realms headless
    node tools/sim.mjs <hero> 5     # bot balance run across all realms
    node tools/dps.mjs <weapon>     # damage vs. the first boss
+   node tools/realms-test.mjs      # every realm variant + its boss
    ```
+   CI (`.github/workflows/ci.yml`) runs `npm test` on every push and only deploys if it passes.
 4. Push. Returning players see the **What's New** screen once.
 
 ### Balance targets used so far
@@ -77,12 +79,7 @@ Then:
 
 ## Ideas for future patches
 
-- **Realm variants for the other slots:**
-  - Mushroom Forest (slot 1)
-  - Sunken Oasis (slot 2)
-  - Sky Isles (slot 4)
-  - Clockwork Foundry (slot 5)
-- **Weapon evolutions:** a maxed weapon plus a specific tome turns into a super weapon.
-- **Achievements that unlock heroes**, and seasonal cosmetic hats.
-- **Harder difficulty tiers** ("Heat" levels) that stack mutators for more Soul Shards.
-- **An online leaderboard for the Daily Challenge.** This needs a small backend.
+- **A third variant per slot.** A Halloween "Pumpkin Patch" for slot 1 would pair nicely with the Oct 25 event.
+- **Seasonal cosmetic hats** unlocked by achievements or events.
+- **More evolutions and evolution-only items.**
+- **Server-side score checks** for the leaderboards (a Supabase Edge Function).

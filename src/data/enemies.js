@@ -504,3 +504,59 @@ export const ENEMIES = {
 };
 
 for (const [id, e] of Object.entries(ENEMIES)) e.id = id;
+
+// ───────────── Realm variants (patch 1.2) ─────────────
+// `like(base, colors, extra)` reuses a body plan with a new palette and stats:
+// colors maps old hex -> new hex; any colour not listed is shifted by `tint` if given.
+function like(baseId, colors, extra) {
+  const base = ENEMIES[baseId];
+  const tint = extra.tint;
+  const parts = base.parts.map((p) => {
+    let c = p.color ?? 0xffffff;
+    if (colors[c] !== undefined) c = colors[c];
+    else if (tint) c = mixHex(c, tint, 0.55);
+    return { ...p, color: c };
+  });
+  const out = { ...base, ...extra, parts, added: '1.2.0' };
+  delete out.tint;
+  return out;
+}
+
+function mixHex(a, b, t) {
+  const ar = (a >> 16) & 255, ag = (a >> 8) & 255, ab = a & 255;
+  const br = (b >> 16) & 255, bg = (b >> 8) & 255, bb = b & 255;
+  return (Math.round(ar + (br - ar) * t) << 16) | (Math.round(ag + (bg - ag) * t) << 8) | Math.round(ab + (bb - ab) * t);
+}
+
+Object.assign(ENEMIES, {
+  // Mushroom Grove
+  sporeling: like('sproutling', { 0x6cc24a: 0x9a6ac8, 0x3d8a2a: 0xf2e6d0, 0x86d95a: 0xff7ad0 }, { name: 'Sporeling' }),
+  fungalimp: like('goblin', { 0x8fbf3f: 0xc89aff, 0x7a5230: 0x4a3a6a }, { name: 'Fungal Imp' }),
+  puffcap: like('boomshroom', { 0xd8342c: 0x3ab8d8, 0xffffff: 0xd8f6ff }, { name: 'Puffcap', blastRadius: 3.6 }),
+  myconid: like('thornspitter', { 0xd6456a: 0xb87ae0, 0x2f7a2a: 0xe8dcc8, 0x49a33a: 0x8a6ac8 }, { name: 'Myconid Shaman', projColor: 0xd89aff, burst: 2 }),
+  glowmoth: like('buzzbee', { 0xf5c518: 0x6affd8, 0x222222: 0x2a4a5a, 0xe8f6ff: 0xd8b0ff }, { name: 'Glow Moth', material: { emissive: 0x0a3a3a } }),
+  shroombrute: like('mossgolem', { 0x4f8f3a: 0xd8342c }, { name: 'Shroom Brute', tint: 0x8a6a9a, hp: 85 }),
+  // Sunken Oasis
+  reefcrab: like('scorpion', { 0xc8612c: 0xe8503a, 0xb4552a: 0xd84a32, 0xd9733a: 0xff7a4a }, { name: 'Reef Crab', speed: 3.4 }),
+  bogfrog: like('snowimp', { 0xf4fbff: 0x5ab84a, 0x9fd8ff: 0x3a8a3a, 0xbfe6ff: 0x4a9a3a, 0xff8a3a: 0xd84a6a }, { name: 'Bog Frog', speed: 6.4 }),
+  nagaarcher: like('bonearcher', { 0xdcd6c6: 0x3ab8a8, 0xe8e4d8: 0x4ac8b8, 0xd0cabb: 0x2a9a8a, 0x4a2c5a: 0xd8a83a }, { name: 'Naga Archer', projColor: 0x6ad8ff }),
+  gull: like('vulture', { 0x5a3c26: 0xf2f2f2, 0x3e2a1a: 0xd8dce0, 0xe59aa0: 0xffffff }, { name: 'Storm Gull', speed: 5.6 }),
+  puffer: like('cinderbomber', { 0x2a2a2a: 0xf2c84a, 0x1a1a1a: 0xd8a83a }, { name: 'Pufferfish', material: {}, blastRadius: 3.4 }),
+  coralgolem: like('sandgolem', { 0xd6b56b: 0xff8a9a, 0xcaa75d: 0xff7a8a, 0xbf9b52: 0xe86a7a, 0xb89450: 0xd85a6a }, { name: 'Coral Golem' }),
+  // Sky Isles
+  harpy: like('vulture', { 0x5a3c26: 0x5a7ad8, 0x3e2a1a: 0x3a5ab8, 0xe59aa0: 0xf2c49a }, { name: 'Harpy', speed: 5.2 }),
+  cloudsprite: like('ghost', { 0xcfe8ff: 0xffffff, 0xe6f3ff: 0xf2f8ff }, { name: 'Cloud Sprite', shoots: true, range: 14, fireCd: 3, projSpeed: 10, projColor: 0xbfe8ff }),
+  skyram: like('frostwolf', { 0x9aa9b8: 0xf2ead8, 0xaebccb: 0xe8dcc8, 0xd9e3ec: 0xffffff, 0x7d8c9b: 0x8a6a4a }, { name: 'Sky Ram' }),
+  windarcher: like('bonearcher', { 0xdcd6c6: 0xe8f0ff, 0xe8e4d8: 0xf2c49a, 0xd0cabb: 0x8ab0e8, 0x4a2c5a: 0x3a6ad8 }, { name: 'Wind Archer', projColor: 0xffffff, projSpeed: 20 }),
+  stormcloud: like('snowball', { 0xf7fbff: 0x8a94a8 }, { name: 'Storm Cloud', splitInto: 'cloudlet', flying: true, hover: 1.5, material: { emissive: 0x101830 } }),
+  cloudlet: like('snowlet', { 0xf7fbff: 0xb8c4d8 }, { name: 'Cloudlet' }),
+  stonesentinel: like('icegolem', {}, { name: 'Stone Sentinel', tint: 0x8a8478, material: { emissive: 0x101010 } }),
+  // Clockwork Foundry
+  cogcrawler: like('crystalcrawler', {}, { name: 'Cog Crawler', tint: 0xb8862a, material: { emissive: 0x1a1000 } }),
+  sparkdrone: like('icewisp', { 0xbff0ff: 0xffb84a, 0x7fd8ff: 0xff8a2a }, { name: 'Spark Drone', projColor: 0xffd84a, material: { emissive: 0x4a2a00 } }),
+  gearhound: like('lavahound', { 0xff6a10: 0xd8a83a, 0xff8a2a: 0xe8c04a }, { name: 'Gear Hound', tint: 0x6a6a72 }),
+  boilerbot: like('cinderbomber', { 0x2a2a2a: 0x8a6a4a, 0x6a5a4a: 0xb8862a }, { name: 'Boiler Bot' }),
+  rivetgunner: like('cactusgunner', { 0x3e9a4a: 0x7a7e88, 0x4aa856: 0x9a9ea8, 0xc9772e: 0xb8862a, 0xd68a3c: 0xd8a83a }, { name: 'Rivet Gunner', projColor: 0xffaa3a }),
+  juggernaut: like('obsidianbrute', { 0xff5a10: 0x6ad8ff }, { name: 'Iron Juggernaut', tint: 0x7a808a, material: { emissive: 0x001a2a } }),
+});
+for (const [id, e] of Object.entries(ENEMIES)) e.id = id;

@@ -78,7 +78,7 @@ const simulate = (secs, bossPhase) => page.evaluate(({ secs, bossPhase }) => {
   return {
     t: Math.round(g.stageTime), lvl: g.run.level, hp: Math.round(g.player.hp) + '/' + Math.round(g.player.stats.maxHp), kills: g.run.kills,
     gold: g.run.gold, alive: g.enemies.list.length, deaths, weapons: g.weapons.list.map((w) => w.id + w.level).join(','),
-    items: Object.keys(g.run.items).length, state: g.state, boss: g.boss ? Math.round(g.boss.e.hp) + '/' + Math.round(g.boss.e.maxHp) : '-', err: String(g.lastError || ''),
+    items: Object.keys(g.run.items).length, state: g.state, realm: g.stage.id, boss: g.boss ? Math.round(g.boss.e.hp) + '/' + Math.round(g.boss.e.maxHp) : '-', err: String(g.lastError || ''),
   };
 }, { secs, bossPhase });
 

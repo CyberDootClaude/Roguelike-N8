@@ -79,6 +79,12 @@ export class Player {
     const surface = world.surfaceAt(this.x, this.z);
     let speed = this.speed;
     if (surface === 'quicksand' && this.onGround) speed *= 0.5;
+    if (surface === 'shallows' && this.onGround) {
+      speed *= 0.65;
+      if (Math.random() < 0.15 && Math.hypot(this.vx, this.vz) > 2) game.fx.burst(this.x, this.y + 0.2, this.z, 0xbff0ff, 2, 3, 0.35, 0.8);
+    }
+    // wind gusts (Sky Isles) shove you around, more so in the air
+    const wind = world.wind, windK = this.onGround ? 1 : 1.5;
     if (this.zoneSlow) speed *= 1 - this.zoneSlow;
     const hs = Math.hypot(this.vx, this.vz);
 
@@ -141,7 +147,7 @@ export class Player {
     }
 
     // Integrate
-    let nx = this.x + this.vx * dt, nz = this.z + this.vz * dt;
+    let nx = this.x + (this.vx + wind.x * windK) * dt, nz = this.z + (this.vz + wind.z * windK) * dt;
     world.pushOut(nx, nz, this.radius, _o);
     nx = _o.x; nz = _o.z;
     // interactable colliders don't live in the prop grid: those that collide were added there too

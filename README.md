@@ -68,6 +68,22 @@ Three.js is vendored in `vendor/`, so the game runs offline.
 
 See **[CONTENT_UPDATES.md](CONTENT_UPDATES.md)** for how to run live events and ship content patches.
 
+### Progression and replay value (v1.2)
+
+- **Heat 1–10**: win a run to unlock stacking difficulty tiers worth +25% Soul Shards each.
+- **30 achievements** with lifetime stats. Five heroes and five weapons unlock through them.
+- **15 weapon evolutions**: get a weapon to level 7 and own its partner tome, and an Evolution card appears on level-up.
+- **Online leaderboards** for Daily, Weekly and Live runs. They stay off until configured; see [LEADERBOARDS.md](LEADERBOARDS.md).
+- **Realm variants**: every slot has two realms, so there are 32 possible runs. Each variant has its own hazard, monsters and boss:
+
+| Slot | Variant | Hazard | Boss |
+| --- | --- | --- | --- |
+| 1 | Mushroom Grove | Spore clouds | Sporemother, the Fungal Matriarch |
+| 2 | Sunken Oasis | Shallow water | Leviathrax, the Tide Serpent |
+| 3 | Crystal Caverns | Crystal geysers | Prismatrix, the Crystal Queen |
+| 4 | Sky Isles | Wind gusts | Zephyra, the Storm Roc |
+| 5 | Clockwork Foundry | Steam vents | Gearlord Omega |
+
 ### Realms, monsters and bosses
 
 | # | Realm | Hazard | Monsters | Boss |
@@ -102,6 +118,8 @@ node tools/smoke.mjs debug 5         # plays all 5 realms headless, screenshots 
 node tools/sim.mjs ranger 5          # fast bot simulation of a full run (balance check)
 node tools/dps.mjs                   # per-weapon DPS vs. the first boss
 node tools/ui-shots.mjs              # screenshots of every menu plus a phone touch session
+node tools/realms-test.mjs           # loads each realm variant and fights its boss
+npm test                             # everything CI runs
 ```
 
 URL flags: `?god` (you can't die), `?debug` (extra weapons and gold).
@@ -112,7 +130,10 @@ URL flags: `?god` (you can't die), `?debug` (extra weapons and gold).
 - `src/world.js`: terrain, props, hazards, interactables
 - `src/player.js`: movement (jump, slide, momentum) and stats
 - `src/enemies.js`: spawn director, AI archetypes, instanced rendering, drops
-- `src/bosses.js`: boss models and attack patterns
+- `src/bosses.js`: boss models and attack patterns, including the reusable `mv*` attack library
+- `src/bossesExtra.js`: data-driven bosses built from that library
+- `src/leaderboard.js`: online scores (Supabase)
+- `src/data/achievements.js`, `src/data/mutators.js` (mutators and Heat), `src/data/patches.js` (version and patch notes)
 - `src/weapons.js`, `src/combat.js`: weapon behaviours, damage pipeline, procs, projectiles
 - `src/hazards.js`: enemy bullets, telegraphs, shockwaves, zones
 - `src/input.js`: keyboard, mouse and touch controls

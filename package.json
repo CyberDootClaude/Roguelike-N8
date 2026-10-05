@@ -7,7 +7,7 @@
     "smoke": "node tools/smoke.mjs basic 1",
     "sim": "node tools/sim.mjs ranger 5",
     "dps": "node tools/dps.mjs",
-    "test": "node tools/smoke.mjs basic 2 && node tools/content-test.mjs && node tools/ui-shots.mjs"
+    "test": "node tools/smoke.mjs basic 2 && node tools/content-test.mjs && node tools/realms-test.mjs && node tools/ui-shots.mjs"
   },
   "repository": {
     "type": "git",

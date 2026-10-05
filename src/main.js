@@ -343,6 +343,7 @@ class Game {
     this.world.camera = this.camera;
     if (this.mods.fog !== 1) { this.scene.fog.near *= this.mods.fog; this.scene.fog.far *= this.mods.fog; }
     this.geyserT = 8;
+    this.gustLeft = 0; this.gustT = 6;
     if (!this.player) this.player = new Player(this, char);
     this.player.placeAt(0, 0);
     this.player.dead = false;
@@ -358,7 +359,7 @@ class Game {
     const n = index + 1 + this.run.loop * REALM_COUNT;
     this.ui.setBanner(`Stage ${n}: ${this.stage.name}`, this.stage.subtitle, '#ffe8a0', 4);
     this.audio.setTheme(this.stage.id, 0);
-    const hazardTips = { geysers: 'Crystal geysers erupt under your feet — watch for purple rings!', quicksand: 'Quicksand patches slow you down — slide or jump across them.', ice: 'Frozen lakes are slippery — you keep sliding when you let go.', lava: 'Lava pools burn! Stay on the rocks or jump across.' };
+    const hazardTips = { spores: 'Spore bursts leave clouds that slow and sicken you — step out quickly!', shallows: 'Shallow water slows you down. Jump through it!', steam: 'Steam vents blast the ground around you — watch for orange rings!', geysers: 'Crystal geysers erupt under your feet — watch for purple rings!', quicksand: 'Quicksand patches slow you down — slide or jump across them.', ice: 'Frozen lakes are slippery — you keep sliding when you let go.', lava: 'Lava pools burn! Stay on the rocks or jump across.' };
     if (this.stage.hazard && hazardTips[this.stage.hazard]) setTimeout(() => this.state === 'play' && this.hint('hz-' + this.stage.hazard, hazardTips[this.stage.hazard]), 5000);
   }
 
@@ -812,7 +813,8 @@ class Game {
         this.audio.play('boss');
       }
       if (this.finalSwarm) this.overtime += dt;
-      if (this.stage.hazard === 'geysers') this.updateGeysers(dt);
+      if (this.stage.eruptions) this.updateEruptions(dt);
+      if (this.stage.hazard === 'gusts') this.updateGusts(dt);
       this.run.achT -= dt;
       if (this.run.achT <= 0) { this.run.achT = 1; this.checkAchievements(); }
     }
@@ -841,14 +843,41 @@ class Game {
   }
 
   // Crystal Caverns: telegraphed eruptions around the player every few seconds.
-  updateGeysers(dt) {
+  // Realm hazard: telegraphed eruptions (crystal geysers, spore bursts, steam vents) near the player.
+  updateEruptions(dt) {
     this.geyserT -= dt;
     if (this.geyserT > 0) return;
-    this.geyserT = 5 + Math.random() * 3;
-    const p = this.player, dmg = 9 * this.enemies.scaling().dmg;
-    for (let i = 0; i < 3; i++) {
+    const E = this.stage.eruptions;
+    this.geyserT = E.every[0] + Math.random() * (E.every[1] - E.every[0]);
+    const p = this.player, dmg = E.dmg * this.enemies.scaling().dmg;
+    for (let i = 0; i < E.count; i++) {
       const a = Math.random() * Math.PI * 2, d = i === 0 ? Math.random() * 2 : 3 + Math.random() * 7;
-      this.hazards.circle(p.x + Math.sin(a) * d, p.z + Math.cos(a) * d, 2.3, 1.4, dmg, 0xc46bff, { fxColor: 0xd8b0ff, source: 'Crystal Geyser' });
+      const x = p.x + Math.sin(a) * d, z = p.z + Math.cos(a) * d;
+      const onBoom = E.zone ? () => this.hazards.zone(x, z, E.radius, E.zone.dur, E.zone.dps * this.enemies.scaling().dmg, E.zone.color, E.zone.slow) : undefined;
+      this.hazards.circle(x, z, E.radius, E.warn, dmg, E.color, { fxColor: E.fx, source: E.name, onBoom });
+    }
+  }
+
+  // Sky Isles: a gust of wind blows across the island for a few seconds.
+  updateGusts(dt) {
+    const w = this.world.wind;
+    this.gustT = (this.gustT ?? 6) - dt;
+    if (this.gustLeft > 0) {
+      this.gustLeft -= dt;
+      const k = Math.min(1, this.gustLeft * 2, (2.2 - this.gustLeft) * 3);
+      w.x = this.gustDir.x * 7 * k; w.z = this.gustDir.z * 7 * k;
+      if (Math.random() < 0.6) {
+        const p = this.player;
+        this.fx.burst(p.x - this.gustDir.x * 8 + (Math.random() - 0.5) * 10, p.y + 1 + Math.random() * 3, p.z - this.gustDir.z * 8 + (Math.random() - 0.5) * 10, 0xffffff, 1, 1, 0.6, 0.7);
+      }
+      if (this.gustLeft <= 0) { w.x = w.z = 0; }
+    } else if (this.gustT <= 0) {
+      this.gustT = 8 + Math.random() * 5;
+      const a = Math.random() * Math.PI * 2;
+      this.gustDir = { x: Math.sin(a), z: Math.cos(a) };
+      this.gustLeft = 2.2;
+      this.ui.toast('💨 A gust of wind!', '#d8ecff', 1.5);
+      this.hint('gusts', 'Wind gusts shove you around — and push you further in the air. Lean into them!');
     }
   }
 
