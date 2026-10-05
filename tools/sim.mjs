@@ -90,13 +90,14 @@ for (let s = 0; s < 5; s++) {
   let bossTime = 0;
   for (; bossTime < 180; bossTime += 15) {
     r = await simulate(15, true);
-    const dead = await page.evaluate(() => window.__game.boss.dead);
+    const dead = await page.evaluate(() => window.__game.boss.dead || !!window.__game.boss.dying);
     if (dead) break;
   }
   console.log(`  boss fight ~${bossTime + 15}s`, JSON.stringify(r));
   await page.evaluate(() => {
     const g = window.__game;
     if (!g.boss.dead) { g.boss.e.untargetable = false; g.boss.e.invuln = false; g.combat.damage(g.boss.e, 1e12, {}); }
+    for (let i = 0; i < 120 && !g.boss.dead; i++) { g.update(1 / 30); g.input.endFrame(); if (g.state === 'modal') g.pickChoice(0); }
     const p = g.world.portal; g.player.placeAt(p.x + 1, p.z + 1);
     let n = 0; while (g.state === 'modal' && n++ < 40) g.pickChoice(0);
     g.interact(p);
@@ -104,5 +105,8 @@ for (let s = 0; s < 5; s++) {
   });
 }
 console.log('errors:', errors.length ? [...new Set(errors)].slice(0, 10).join('\n') : 'none');
+const gameErr = await page.evaluate(() => String(window.__game?.lastError || '')).catch(() => '');
+if (gameErr) console.log('game error:', gameErr);
+if (errors.length || gameErr) process.exitCode = 1;
 await browser.close();
 server.close();

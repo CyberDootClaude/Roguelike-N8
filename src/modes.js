@@ -84,11 +84,11 @@ export function makeRunConfig(mode, selectedChar) {
   if (mode === 'daily') {
     const d = currentDaily();
     const rng = mulberry32(d.seed);
-    return { mode, label: d.name, charId: d.char, mutators: d.mutators, shardMult: d.shardMult, realms: chooseRealms(rng), seed: d.seed, eventId: d.id };
+    return { mode, label: d.name, charId: d.char, mutators: d.mutators, shardMult: d.shardMult, realms: chooseRealms(rng), seed: d.seed, eventId: d.id, board: d.id };
   }
   if (mode === 'weekly') {
     const w = currentWeekly();
-    return { mode, label: w.name, charId: selectedChar, mutators: w.mutators, shardMult: w.shardMult, realms: chooseRealms(), seed: null, eventId: w.id };
+    return { mode, label: w.name, charId: selectedChar, mutators: w.mutators, shardMult: w.shardMult, realms: chooseRealms(), seed: null, eventId: w.id, board: w.live ? `live-${w.id}` : w.id };
   }
   return { mode: 'standard', label: 'Standard', charId: selectedChar, mutators: [], shardMult: 1, realms: chooseRealms(), seed: null };
 }

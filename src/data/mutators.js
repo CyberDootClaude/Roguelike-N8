@@ -5,7 +5,7 @@
 export const DEFAULT_MODS = {
   enemyHp: 1, enemyDmg: 1, enemySpeed: 1, enemySize: 1, spawnRate: 1, spawnCap: 1,
   eliteEvery: 1, bossHp: 1, goldMult: 1, xpMult: 1, gravity: 1, jump: 1, fog: 1,
-  deathBlast: 0, bossChests: 0,
+  deathBlast: 0, bossChests: 0, chestCost: 1, healMult: 1, timerMult: 1,
 };
 
 export const MUTATORS = {
@@ -85,3 +85,26 @@ export function buildMods(ids) {
 export function shardBonus(ids) {
   return ids.reduce((a, id) => a + (MUTATORS[id]?.shards || 0), 0);
 }
+
+// Heat: stacking difficulty tiers unlocked by winning. Each tier keeps all lower tiers' effects.
+export const HEAT_LEVELS = [
+  { desc: 'Enemies have +15% HP', mods: { enemyHp: 1.15 } },
+  { desc: 'Enemies deal +12% damage', mods: { enemyDmg: 1.12 } },
+  { desc: 'Elites arrive 30% more often', mods: { eliteEvery: 0.7 } },
+  { desc: '+15% more enemies', mods: { spawnRate: 1.15, spawnCap: 1.1 } },
+  { desc: 'Bosses have +25% HP', mods: { bossHp: 1.25 } },
+  { desc: 'Enemies move 8% faster', mods: { enemySpeed: 1.08 } },
+  { desc: 'Chests cost 25% more', mods: { chestCost: 1.25 } },
+  { desc: 'Healing is 30% weaker', mods: { healMult: 0.7 } },
+  { desc: 'Enemies have +20% HP and damage', mods: { enemyHp: 1.2, enemyDmg: 1.2 } },
+  { desc: 'The Final Swarm comes 20% sooner', mods: { timerMult: 0.8 } },
+];
+export const MAX_HEAT = HEAT_LEVELS.length;
+
+export function applyHeat(mods, heat) {
+  for (let i = 0; i < heat; i++) {
+    for (const [k, v] of Object.entries(HEAT_LEVELS[i].mods)) mods[k] *= v;
+  }
+  return mods;
+}
+export const heatShardBonus = (heat) => heat * 0.25;

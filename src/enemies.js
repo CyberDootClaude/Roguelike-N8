@@ -48,6 +48,7 @@ export class EnemyManager {
       const mat = new THREE.MeshLambertMaterial({ vertexColors: true, flatShading: true, ...(def.material || {}) });
       if (def.material?.emissive) mat.emissive = new THREE.Color(def.material.emissive);
       this.pools[id] = new InstancePool(this.game.scene, geo, mat, 260, { colored: true });
+      this.pools[id].mesh.castShadow = true;
     }
     return this.pools[id];
   }
@@ -381,6 +382,11 @@ export class EnemyManager {
       v.y = e.y + (moving && !e.flying ? Math.abs(Math.sin(e.t * spd * 1.8)) * 0.12 : 0);
       const squash = moving ? 1 + Math.sin(e.t * spd * 3.6) * 0.04 : 1;
       v.sy = squash; v.sx = v.sz = 2 - squash;
+      // waddle + lean so walkers don't just slide around
+      if (!(def.ai === 'charger' && e.state === 'wind')) {
+        v.rz = e.flying ? Math.sin(e.t * 2.4) * 0.15 : moving ? Math.sin(e.t * spd * 1.8) * 0.09 : 0;
+        v.rx = e.state === 'dash' ? 0.35 : moving && !e.flying ? 0.08 : 0;
+      }
       if (e.hitFlash > 0) { v.cr = v.cg = v.cb = 3; }
       else if (e.freezeT > 0) { v.cr = 0.55; v.cg = 0.85; v.cb = 1.8; }
       else if (e.poisonT > 0) { v.cr = 0.7; v.cg = 1.35; v.cb = 0.55; }
@@ -447,6 +453,7 @@ export class EnemyManager {
       e.challenge.remaining--;
       if (e.challenge.remaining <= 0) {
         g.ui.toast('Challenge complete! A reward chest appears.', '#ffcf4a');
+        g.run.challenges++;
         g.world.addChest(e.challenge.x + 3, e.challenge.z, true);
         g.audio.play('chest');
         this.challengeGroups.splice(this.challengeGroups.indexOf(e.challenge), 1);
@@ -472,6 +479,7 @@ export class EnemyManager {
     if (Math.random() < 0.006) pk.heart(e.x, e.y + 0.5, e.z);
     if (Math.random() < 0.0015) pk.magnet(e.x, e.y + 0.5, e.z);
     if (e.elite) {
+      g.hitStop(0.06);
       g.world.addChest(e.x, e.z, true);
       g.ui.toast('Elite slain! It dropped a chest.', '#ffcf4a');
     }

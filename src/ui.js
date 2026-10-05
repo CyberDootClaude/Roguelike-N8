@@ -2,9 +2,11 @@
 import * as THREE from 'three';
 import { CHARACTERS, WEAPONS, TOMES, ITEMS, RARITIES } from './data/loot.js';
 import { STAGE_SLOTS, REALM_COUNT } from './data/stages.js';
-import { MUTATORS } from './data/mutators.js';
+import { MUTATORS, HEAT_LEVELS } from './data/mutators.js';
+import { ACHIEVEMENTS, unlockSource } from './data/achievements.js';
 import { GAME_VERSION, PATCHES, isNew } from './data/patches.js';
 import { currentDaily, currentWeekly } from './modes.js';
+import { topScores, boardsEnabled } from './leaderboard.js';
 import { formatTime, fmtNum, clamp } from './util.js';
 import { MAX_WEAPONS, MAX_TOMES } from './progression.js';
 import { META_UPGRADES, metaCost } from './settings.js';
@@ -378,12 +380,19 @@ export class UI {
       const r = records?.[c.id];
       const w = WEAPONS[c.weapon];
       const sel = lockedChar ? c.id === lockedChar : c.id === this.selectedChar;
+      const unlocked = g.isUnlocked('char', c.id) || c.id === lockedChar;
+      if (!unlocked) {
+        const src = unlockSource('char', c.id);
+        const req = src ? `${src.name}: ${src.desc}` : 'Locked';
+        return `<div class="char locked" data-act="lockedchar" data-req="${req}" title="${req}">
+          <div class="ic">🔒</div><div class="nm">${c.name}</div><div class="pk">${req}</div></div>`;
+      }
       return `<div class="char ${sel ? 'sel' : ''} ${lockedChar && !sel ? 'locked' : ''}" ${lockedChar ? '' : `data-act="char" data-id="${c.id}"`}>
         ${isNew(c.added) ? NEW_BADGE : ''}
         <div class="ic">${CHAR_ICONS[c.id] || '🙂'}</div>
         <div class="nm">${c.name}</div>
         <div class="pk">${w.icon} ${w.name}<br>${c.perk}</div>
-        ${r ? `<div class="best">Best: Stage ${r.bestStage} · ${fmtNum(r.bestKills)} kills${r.wins ? ` · ${r.wins}🏆` : ''}</div>` : ''}
+        ${r ? `<div class="best">Best: Stage ${r.bestStage} · ${fmtNum(r.bestKills)} kills${r.wins ? ` · ${r.wins}🏆` : ''}${r.bestHeat > 0 ? ` · 🔥${r.bestHeat}` : ''}</div>` : ''}
       </div>`;
     }).join('');
     const lengths = [[360, 'Quick (6 min)'], [600, 'Standard (10 min)']];
@@ -407,6 +416,7 @@ export class UI {
       <div class="row modes">${modes.map(([v, l]) => `<button class="sm toggle ${mode === v ? 'on' : ''}" data-act="mode" data-v="${v}">${l}</button>`).join('')}</div>
       ${modeInfo}
       <div class="chars">${chars}</div>
+      ${this.heatHtml()}
       <div class="row">Stage timer:
         ${lengths.map(([v, l]) => `<button class="sm toggle ${this.runLength === v ? 'on' : ''}" data-act="len" data-v="${v}">${l}</button>`).join('')}
       </div>
@@ -415,10 +425,75 @@ export class UI {
         <button data-act="shop">💠 Soul Shop <span class="pill">${fmtNum(g.meta.shards)}</span></button>
         <button data-act="settings">⚙️ Settings</button>
         <button data-act="help">❔ How to Play</button>
+        <button data-act="achievements">🏆 Achievements <span class="pill">${Object.keys(g.meta.achievements).length}/${ACHIEVEMENTS.length}</span></button>
+        <button data-act="boards" data-v="${mode === 'weekly' ? 'weekly' : 'daily'}">🌍 Leaderboards</button>
         <button data-act="whatsnew">📰 What's New</button>
       </div>
       <div class="version">v${GAME_VERSION} · ${PATCHES[0].title}</div>
     </div>`, 'menu');
+  }
+
+  heatHtml() {
+    const g = this.game, max = g.meta.maxHeat || 0;
+    if (g.mode === 'daily') return '';
+    if (!max) return '<div class="row muted">🔥 Win a run to unlock <b>Heat</b> difficulty tiers (more Soul Shards).</div>';
+    const h = Math.min(g.heat, max);
+    const list = HEAT_LEVELS.slice(0, h).map((l, i) => `<li>${i + 1}. ${l.desc}</li>`).join('');
+    return `<div class="row heat">🔥 Heat
+      <button class="sm" data-act="heat" data-v="-1" ${h <= 0 ? 'disabled' : ''}>−</button>
+      <b class="heatnum heat${h}">${h}</b>
+      <button class="sm" data-act="heat" data-v="1" ${h >= max ? 'disabled' : ''}>+</button>
+      <span class="muted">${h ? `+${Math.round(h * 25)}% Soul Shards` : 'Normal difficulty'} · unlocked up to ${max}</span></div>
+      ${h ? `<ul class="heatlist">${list}</ul>` : ''}`;
+  }
+
+  showAchievements() {
+    const g = this.game, got = g.meta.achievements, st = g.meta.stats;
+    const cards = ACHIEVEMENTS.map((a) => {
+      const done = !!got[a.id];
+      let reward = '';
+      if (a.unlock?.char) reward = `Unlocks hero: ${CHARACTERS.find((c) => c.id === a.unlock.char).name}`;
+      if (a.unlock?.weapon) reward = `Unlocks weapon: ${WEAPONS[a.unlock.weapon].icon} ${WEAPONS[a.unlock.weapon].name}`;
+      return `<div class="ach ${done ? 'done' : ''}">
+        <div class="ic">${done ? a.icon : '🔒'}</div>
+        <div class="info"><b>${a.name}</b><span>${a.desc}</span>${reward ? `<em>${reward}</em>` : ''}${done ? `<small>Earned ${got[a.id]}</small>` : ''}</div>
+      </div>`;
+    }).join('');
+    this.show(`<div class="panel" style="max-width:960px">
+      <h2>🏆 Achievements · ${Object.keys(got).length}/${ACHIEVEMENTS.length}</h2>
+      <div class="sub">Lifetime: ${fmtNum(st.kills)} kills · ${st.bosses} bosses · ${st.chests} chests · ${st.heroWins.length} heroes with a win · ${st.realms.length} realms visited</div>
+      <div class="achs">${cards}</div>
+      <div class="row"><button class="primary" data-act="back">Back</button></div>
+    </div>`, 'achievements');
+  }
+
+  async showBoards(tab = 'daily') {
+    const g = this.game;
+    const daily = currentDaily(), weekly = currentWeekly();
+    const board = tab === 'daily' ? daily.id : weekly.live ? `live-${weekly.id}` : weekly.id;
+    const title = tab === 'daily' ? daily.name : weekly.name;
+    const tabs = [['daily', '📅 Daily'], ['weekly', `🎪 ${weekly.live ? 'Live Event' : 'Weekly'}`]]
+      .map(([v, l]) => `<button class="sm toggle ${tab === v ? 'on' : ''}" data-act="boards" data-v="${v}">${l}</button>`).join('');
+    const nameRow = `<div class="row"><span>Your name:</span><input id="pname" maxlength="16" value="${g.settings.playerName || ''}" placeholder="Player name">
+      <button class="sm" data-act="savename" data-v="${tab}">Save</button></div>`;
+    const frame = (body) => `<div class="panel" style="max-width:620px">
+      <h2>🌍 Leaderboards</h2><div class="row">${tabs}</div>
+      <div class="sub"><b>${title}</b> · your best: <b>${fmtNum(g.meta.daily?.[board] || 0)}</b></div>
+      ${body}${nameRow}
+      <div class="row"><button class="primary" data-act="back">Back</button></div></div>`;
+    if (!boardsEnabled()) {
+      this.show(frame('<div class="help">Online leaderboards aren\'t switched on for this copy of the game yet.<br>Your personal bests are still tracked. (Developer: see LEADERBOARDS.md.)</div>'), 'boards');
+      return;
+    }
+    this.show(frame('<div class="help">Loading…</div>'), 'boards');
+    const rows = await topScores(board, 20);
+    if (!this.screenIs('boards')) return;
+    const me = g.settings.playerName;
+    const body = !rows ? '<div class="help">Couldn\'t reach the leaderboard. Try again later.</div>'
+      : !rows.length ? '<div class="help">No scores yet — be the first!</div>'
+        : `<table class="board"><tr><th>#</th><th>Name</th><th>Hero</th><th>Realm</th><th>Score</th></tr>${rows.map((r, i) => `<tr class="${r.name === me ? 'me' : ''}">
+          <td>${i + 1}</td><td>${r.name.replace(/</g, '&lt;')}</td><td>${CHAR_ICONS[r.hero] || ''}</td><td>${r.stage ?? ''}</td><td>${fmtNum(r.score)}</td></tr>`).join('')}</table>`;
+    this.show(frame(body), 'boards');
   }
 
   showWhatsNew() {
@@ -455,7 +530,7 @@ export class UI {
 
   cardHtml(c, i, banishes) {
     const r = c.rarity || RARITIES[0];
-    const canBanish = banishes > 0 && c.type !== 'shrine' && c.type !== 'gold';
+    const canBanish = banishes > 0 && c.type !== 'shrine' && c.type !== 'gold' && c.type !== 'evolve';
     return `<div class="card rar-${r.id}" style="--rc:${r.color}" data-act="pick" data-i="${i}">
       <span class="key">${i + 1}</span>
       ${canBanish ? `<button class="banish" data-act="banish" data-i="${i}" title="Banish: never offer this again this run">✖</button>` : ''}
@@ -526,8 +601,10 @@ export class UI {
       <div><span>Run time</span><b>${formatTime(sum.time)}</b></div>
       ${sum.shards !== undefined ? `<div><span>Soul Shards</span><b class="shard">+${sum.shards} 💠</b></div>` : ''}
       ${sum.mode && sum.mode !== 'standard' ? `<div><span>Mode</span><b>${sum.label}</b></div>` : ''}
-      ${sum.dailyScore !== undefined ? `<div><span>Daily score</span><b>${fmtNum(sum.dailyScore)}${sum.dailyScore >= sum.dailyBest ? ' 🏅 best!' : ` (best ${fmtNum(sum.dailyBest)})`}</b></div>` : ''}
-    </div>${this.buildHtml()}`;
+      ${sum.heat ? `<div><span>Heat</span><b>🔥 ${sum.heat}</b></div>` : ''}
+      ${sum.heatUnlocked ? `<div><span>Unlocked</span><b>🔥 Heat ${sum.heatUnlocked}!</b></div>` : ''}
+      ${sum.dailyScore !== undefined ? `<div><span>Event score</span><b>${fmtNum(sum.dailyScore)}${sum.dailyScore >= sum.dailyBest ? ' 🏅 best!' : ` (best ${fmtNum(sum.dailyBest)})`}</b></div>` : ''}
+    </div>${sum.posted ? `<div class="help">🌍 ${sum.posted}</div>` : ''}${this.buildHtml()}`;
   }
 
   showGameOver(sum) {

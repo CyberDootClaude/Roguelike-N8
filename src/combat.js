@@ -91,7 +91,11 @@ export class Combat {
       const n = dmg >= 1 ? Math.round(dmg) : Math.round(dmg * 10) / 10;
       game.fx.text(e.x, e.y + e.height + 0.3, e.z, crit ? n + '!' : String(n), crit ? '#ffb020' : '#ffffff', crit ? 1.3 : 0.9);
     }
-    if (!opts.noProc) this.procs(e, dmg);
+    if (!opts.noProc) {
+      this.procs(e, dmg);
+      const eff = opts.effect ?? game.weapons?.firingEffect;
+      if (eff) this.evolveEffect(e, dmg, eff);
+    }
     if (!opts.silent) game.audio.play('hit');
     if (e.hp <= 0) game.enemies.kill(e);
     return dmg;
@@ -114,6 +118,16 @@ export class Combat {
     if (st.chainChance && Math.random() < st.chainChance) {
       this.chain(e, dmg * 0.5, 3, 7, { noProc: true });
     }
+  }
+
+  // On-hit bonus from evolved weapons.
+  evolveEffect(e, dmg, eff) {
+    const game = this.game;
+    if (eff === 'freeze') { if (!e.boss && Math.random() < 0.35) e.freezeT = 1.2; }
+    else if (eff === 'burn') { e.poisonT = 3; e.poisonDps = Math.max(e.poisonDps, dmg * 0.15); }
+    else if (eff === 'chain') { if (Math.random() < 0.18) this.chain(e, dmg * 0.5, 3, 7, { noProc: true }); }
+    else if (eff === 'explode') { if (Math.random() < 0.15) this.explode(e.x, e.y + 0.8, e.z, 2.6, dmg * 0.6, { noProc: true, color: 0xffb04a }); }
+    else if (eff === 'gold') { if (Math.random() < 0.05) game.pickups.coin(e.x, e.y + 0.6, e.z, 1 + game.stageIndex); }
   }
 
   explode(x, y, z, r, dmg, opts = {}) {
@@ -159,6 +173,7 @@ export class Combat {
     const vis = { x: p.x, y: p.y, z: p.z, s: p.size ?? 1 };
     if (!pool.add(vis)) return null;
     p.vis = vis;
+    p.effect = p.effect ?? this.game.weapons?.firingEffect ?? null;
     p.hit = p.hit || new Set();
     p.t = 0;
     this.projectiles.push(p);
@@ -236,7 +251,7 @@ export class Combat {
           if (cy < e.y - 0.6 || cy > e.y + e.height + 0.8) continue;
           p.hit.add(e);
           if (p.onHit) { p.onHit(p, e); if (p.explodes) { dead = true; break; } }
-          else this.damage(e, p.dmg, { crit: p.crit, kb: p.kb, fromX: p.x - p.vx * 0.1, fromZ: p.z - p.vz * 0.1 });
+          else this.damage(e, p.dmg, { crit: p.crit, kb: p.kb, fromX: p.x - p.vx * 0.1, fromZ: p.z - p.vz * 0.1, effect: p.effect });
           p.pierce--;
           if (p.pierce < 0) { dead = true; break; }
         }

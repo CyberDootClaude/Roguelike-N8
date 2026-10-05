@@ -124,6 +124,7 @@ export class World {
     geo.computeVertexNormals();
     const mat = new THREE.MeshLambertMaterial({ vertexColors: true, flatShading: true });
     this.terrain = new THREE.Mesh(geo, mat);
+    this.terrain.receiveShadow = true;
     this.root.add(this.terrain);
 
     if (hz === 'lava' || hz === 'ice') {
@@ -189,7 +190,25 @@ export class World {
     this.root.add(hemi);
     const sun = new THREE.DirectionalLight(s.sun[0], s.sun[1]);
     sun.position.set(60, 100, 40);
-    this.root.add(sun);
+    sun.castShadow = true;
+    sun.shadow.mapSize.set(2048, 2048);
+    const sc = sun.shadow.camera;
+    sc.left = sc.bottom = -45; sc.right = sc.top = 45; sc.near = 1; sc.far = 260;
+    sun.shadow.bias = -0.0008;
+    sun.shadow.normalBias = 0.6;
+    this.root.add(sun, sun.target);
+    this.sun = sun;
+
+    // gradient sky dome: realm sky colour overhead fading into the fog colour at the horizon
+    const skyMat = new THREE.ShaderMaterial({
+      uniforms: { top: { value: new THREE.Color(s.sky).multiplyScalar(0.75) }, mid: { value: new THREE.Color(s.sky) }, bottom: { value: new THREE.Color(s.fog) } },
+      vertexShader: 'varying vec3 vP; void main(){ vP = normalize(position); gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }',
+      fragmentShader: 'uniform vec3 top; uniform vec3 mid; uniform vec3 bottom; varying vec3 vP; void main(){ float h = vP.y; vec3 c = h > 0.0 ? mix(mid, top, smoothstep(0.15, 0.9, h)) : bottom; c = mix(bottom, c, smoothstep(-0.05, 0.18, h)); gl_FragColor = vec4(c, 1.0); }',
+      side: THREE.BackSide, depthWrite: false, fog: false,
+    });
+    this.sky = new THREE.Mesh(new THREE.SphereGeometry(420, 24, 16), skyMat);
+    this.sky.renderOrder = -1;
+    this.root.add(this.sky);
 
     // big distant decorations
     const r = this.rng;
@@ -306,6 +325,8 @@ export class World {
       const mat = new THREE.MeshLambertMaterial({ vertexColors: true, flatShading: true });
       if (glowKinds[pd.kind]) mat.emissive = new THREE.Color(glowKinds[pd.kind]);
       const inst = new THREE.InstancedMesh(geo, mat, pd.count);
+      inst.castShadow = !!pd.collide;
+      inst.receiveShadow = true;
       let placed = 0;
       for (let k = 0; k < pd.count * 3 && placed < pd.count; k++) {
         const x = (r() * 2 - 1) * (PLAY_HALF + 6), z = (r() * 2 - 1) * (PLAY_HALF + 6);
@@ -374,6 +395,11 @@ export class World {
 
   update(dt, player) {
     this.time += dt;
+    if (player && this.sun) {
+      this.sun.position.set(player.x + 40, player.y + 90, player.z + 25);
+      this.sun.target.position.set(player.x, player.y, player.z);
+    }
+    if (this.sky && this.camera) this.sky.position.copy(this.camera.position);
     const t = this.time;
     for (const it of this.interactables) {
       const m = it.mesh;

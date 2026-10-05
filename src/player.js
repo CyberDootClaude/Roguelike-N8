@@ -31,6 +31,7 @@ export class Player {
     this.shieldFlash = 0;
     this.lastHurtBy = '';
     this.mesh = makePlayerMesh(char);
+    this.mesh.traverse((o) => { if (o.isMesh) o.castShadow = true; });
     game.scene.add(this.mesh);
     this.shadow = new THREE.Mesh(new THREE.CircleGeometry(0.6, 16).rotateX(-Math.PI / 2),
       new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.3, depthWrite: false }));
@@ -234,6 +235,7 @@ export class Player {
     }
     const final = dmg * (1 - this.stats.armor);
     this.hp -= final;
+    if (this.game.bossActive && this.game.run) this.game.run.bossHurt = true;
     if (!ignoreIframes) this.iframes = 0.5;
     this.lastHurtBy = source;
     this.game.fx.text(this.x, this.y + 2.2, this.z, String(Math.max(1, Math.round(final))), '#ff4040', 1);
@@ -260,7 +262,7 @@ export class Player {
   heal(n) {
     if (this.dead) return;
     const before = this.hp;
-    this.hp = Math.min(this.stats.maxHp, this.hp + n);
+    this.hp = Math.min(this.stats.maxHp, this.hp + n * this.game.mods.healMult);
     const d = this.hp - before;
     if (d >= 1) this.game.fx.text(this.x, this.y + 2.2, this.z, '+' + Math.round(d), '#50ff70', 0.8);
   }

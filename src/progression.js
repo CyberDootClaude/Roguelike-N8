@@ -1,5 +1,5 @@
 // Level-up choices, chest loot and shrine rewards.
-import { WEAPONS, TOMES, ITEMS, RARITIES, SHRINE_BUFFS, WEAPON_UPGRADES, rollRarity, fmtStat } from './data/loot.js';
+import { WEAPONS, TOMES, ITEMS, RARITIES, SHRINE_BUFFS, WEAPON_UPGRADES, EVOLUTIONS, EVOLVE_LEVEL, rollRarity, fmtStat } from './data/loot.js';
 import { shuffle } from './util.js';
 import { GAME_VERSION } from './data/patches.js';
 
@@ -14,7 +14,7 @@ export function buildLevelChoices(game, n = 3) {
     pool.push({ type: 'weapon-up', id: w.id, weight: 3 });
   }
   if (W.list.length < MAX_WEAPONS) {
-    for (const id of Object.keys(WEAPONS)) if (!W.has(id)) pool.push({ type: 'weapon-new', id, weight: 1 });
+    for (const id of Object.keys(WEAPONS)) if (!W.has(id) && game.isUnlocked('weapon', id)) pool.push({ type: 'weapon-new', id, weight: 1 });
   }
   const tomeIds = Object.keys(run.tomes);
   for (const id of tomeIds) {
@@ -25,7 +25,14 @@ export function buildLevelChoices(game, n = 3) {
     for (const id of Object.keys(TOMES)) if (!run.tomes[id]) pool.push({ type: 'tome-new', id, weight: 1 });
   }
   const picks = [];
-  const avail = pool.filter((p) => !run.banished?.has(p.id));
+  // evolutions always take a slot when available
+  for (const w of W.list) {
+    const evo = EVOLUTIONS[w.id];
+    if (evo && !w.evolved && w.level >= EVOLVE_LEVEL && run.tomes[evo.tome] && picks.length < n) {
+      picks.push({ type: 'evolve', id: w.id, weight: 0 });
+    }
+  }
+  const avail = pool.filter((p) => !run.banished?.has(p.id) && !picks.some((q) => q.id === p.id));
   while (picks.length < n && avail.length) {
     let tot = avail.reduce((a, b) => a + b.weight, 0), x = Math.random() * tot, i = 0;
     for (; i < avail.length; i++) { x -= avail[i].weight; if (x <= 0) break; }
@@ -41,7 +48,12 @@ export function buildLevelChoices(game, n = 3) {
 
 function describe(game, p, rarity) {
   const c = { ...p, rarity };
-  if (p.type === 'weapon-new') {
+  if (p.type === 'evolve') {
+    const evo = EVOLUTIONS[p.id];
+    c.rarity = RARITIES[4];
+    c.title = evo.name; c.icon = evo.icon; c.tag = `🧬 EVOLUTION of ${WEAPONS[p.id].name}`;
+    c.lines = [evo.desc, `On hit: ${{ freeze: 'freezes', burn: 'burns', chain: 'chains lightning', explode: 'explodes', gold: 'drops gold' }[evo.effect]}`];
+  } else if (p.type === 'weapon-new') {
     const d = WEAPONS[p.id];
     c.title = d.name; c.icon = d.icon; c.tag = 'New Weapon';
     c.isNew = d.added === GAME_VERSION;
@@ -73,7 +85,24 @@ export function applyChoice(game, c) {
   const run = game.run, P = game.player;
   switch (c.type) {
     case 'weapon-new': game.weapons.add(c.id); break;
-    case 'weapon-up': game.weapons.get(c.id).applyUpgrade(c.rolls); break;
+    case 'weapon-up': {
+      const w = game.weapons.get(c.id);
+      w.applyUpgrade(c.rolls);
+      const evo = EVOLUTIONS[c.id];
+      if (evo && !w.evolved && w.level === EVOLVE_LEVEL && !run.tomes[evo.tome]) {
+        game.ui.toast(`🧬 ${w.def.name} can now evolve — find the ${TOMES[evo.tome].icon} ${TOMES[evo.tome].name}!`, '#c89aff', 6);
+      }
+      break;
+    }
+    case 'evolve': {
+      const w = game.weapons.get(c.id);
+      w.evolve(EVOLUTIONS[c.id]);
+      run.evolutions++;
+      game.audio.play('legendary');
+      game.ui.setBanner(`🧬 ${w.def.name}`, 'Weapon evolved!', '#ffb42a', 3);
+      game.fx.ring(game.player.x, game.player.y, game.player.z, 0.5, 9, 0xffb42a, 0.8, 0.9);
+      break;
+    }
     case 'tome-new':
     case 'tome-up': {
       const t = TOMES[c.id];
@@ -117,5 +146,5 @@ export function buildShrineChoices(game, golden) {
 export function chestCost(game) {
   const opened = game.stageChests;
   const base = (18 + opened * 9 + opened * opened * 0.8) * (1 + game.stageIndex * 0.8) * Math.pow(3, game.run.loop);
-  return Math.max(1, Math.round(base * (1 - game.player.stats.chestDiscount)));
+  return Math.max(1, Math.round(base * (1 - game.player.stats.chestDiscount) * game.mods.chestCost));
 }

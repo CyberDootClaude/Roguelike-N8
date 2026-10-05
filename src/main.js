@@ -1,9 +1,11 @@
 // Game bootstrap, state machine, stage flow, camera and interaction.
 import * as THREE from 'three';
 import { STAGES, REALM_COUNT } from './data/stages.js';
-import { MUTATORS, buildMods, DEFAULT_MODS } from './data/mutators.js';
+import { MUTATORS, buildMods, DEFAULT_MODS, applyHeat, heatShardBonus, MAX_HEAT } from './data/mutators.js';
 import { GAME_VERSION } from './data/patches.js';
 import { makeRunConfig, loadLiveEvents, dailyScore } from './modes.js';
+import { loadBoardConfig, submitScore, cleanName } from './leaderboard.js';
+import { ACHIEVEMENTS, LOCKED_CHARS, LOCKED_WEAPONS } from './data/achievements.js';
 import { CHARACTERS, ITEMS, RARITIES } from './data/loot.js';
 import { World } from './world.js';
 import { Player } from './player.js';
@@ -28,6 +30,7 @@ class Game {
     this.canvas = document.getElementById('game');
     this.settings = loadSettings();
     this.meta = loadMeta();
+    this.migrateMeta();
     this.renderer = new THREE.WebGLRenderer({ canvas: this.canvas, antialias: this.settings.quality !== 'low', powerPreference: 'high-performance' });
     this.applyQuality();
     this.renderer.setSize(innerWidth, innerHeight);
@@ -53,6 +56,7 @@ class Game {
     this.godMode = params.has('god');
     this.records = this.loadRecords();
     this.mode = 'standard';
+    this.heat = 0;
     this.mods = { ...DEFAULT_MODS };
 
     const unlockAudio = () => this.audio.init();
@@ -73,6 +77,8 @@ class Game {
     this.ui.showMenu(this.records);
     // live events can change the weekly event without a code release
     loadLiveEvents().then(() => { if (this.state === 'menu' && this.ui.screenIs('menu')) this.ui.showMenu(this.records); });
+    this.boardsOn = false;
+    loadBoardConfig().then((on) => { this.boardsOn = on; });
     this.checkWhatsNew();
     this.last = performance.now();
     requestAnimationFrame((t) => this.frame(t));
@@ -87,7 +93,7 @@ class Game {
     const r = this.records[id] || { bestStage: 0, bestKills: 0, wins: 0 };
     r.bestStage = Math.max(r.bestStage, sum.stage);
     r.bestKills = Math.max(r.bestKills, sum.kills);
-    if (won) r.wins++;
+    if (won) { r.wins++; r.bestHeat = Math.max(r.bestHeat ?? -1, this.run.heat || 0); }
     this.records[id] = r;
     try { localStorage.setItem('bonkrealms.records', JSON.stringify(this.records)); } catch { /* storage unavailable */ }
   }
@@ -99,6 +105,13 @@ class Game {
     this.renderer.setPixelRatio(ratio);
     this.renderer.setSize(innerWidth, innerHeight);
     if (this.fx) this.fx.maxParticles = q === 'low' ? 250 : q === 'medium' ? 500 : 900;
+    // real-time shadows only on High
+    const shadows = q === 'high';
+    if (this.renderer.shadowMap.enabled !== shadows) {
+      this.renderer.shadowMap.enabled = shadows;
+      this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+      this.scene?.traverse((o) => { if (o.material) (Array.isArray(o.material) ? o.material : [o.material]).forEach((m) => { m.needsUpdate = true; }); });
+    }
   }
 
   updateSetting(key, value) {
@@ -121,8 +134,8 @@ class Game {
     if (!this.run) return 0;
     const sum = this.summary();
     const total = Math.floor(shardsForRun(sum) * (this.run.config.shardMult || 1));
-    if (this.run.config.mode === 'daily') {
-      const key = this.run.config.eventId;
+    if (this.run.config.board) {
+      const key = this.run.config.board;
       const score = dailyScore(sum);
       this.meta.daily = this.meta.daily || {};
       this.run.dailyScore = score;
@@ -132,6 +145,9 @@ class Game {
     const gain = Math.max(0, total - (this.run.shardsPaid || 0));
     this.run.shardsPaid = total;
     this.meta.shards += gain;
+    this.meta.stats.shards += gain;
+    this.commitRun();
+    this.checkAchievements();
     saveMeta(this.meta);
     return gain;
   }
@@ -149,6 +165,84 @@ class Game {
     this.ui.showShop(this.meta);
   }
 
+  // Post the run to the online board (Daily / Weekly / Live modes only).
+  postScore(sum) {
+    const board = this.run?.config.board;
+    if (!board || this.run.posted) return '';
+    if (!this.boardsOn) return '';
+    const name = cleanName(this.settings.playerName);
+    if (!name) return 'Set a player name in 🌍 Leaderboards to post your scores online.';
+    this.run.posted = true;
+    submitScore({ board, name, score: this.run.dailyScore || 0, hero: this.run.char.id, stage: sum.stage, kills: sum.kills, version: GAME_VERSION })
+      .then((ok) => this.ui.toast(ok ? `🌍 Score posted as ${name}` : '🌍 Could not reach the leaderboard', ok ? '#7fe0ff' : '#ff8a6a'));
+    return `Posting your score as <b>${name}</b>…`;
+  }
+
+  // ─────────────────────── achievements & unlocks ───────────────────────
+  migrateMeta() {
+    const m = this.meta;
+    m.stats = { kills: 0, bosses: 0, chests: 0, wins: 0, shards: 0, realms: [], heroWins: [], ...(m.stats || {}) };
+    m.achievements = m.achievements || {};
+    m.unlocked = { chars: [], weapons: [], ...(m.unlocked || {}) };
+    if (!m.v12) {
+      // players from before unlocks existed keep everything they already had
+      if ((m.totalRuns || 0) > 0) { m.unlocked.chars = [...LOCKED_CHARS]; m.unlocked.weapons = [...LOCKED_WEAPONS]; }
+      m.v12 = true;
+    }
+    saveMeta(m);
+  }
+
+  isUnlocked(kind, id) {
+    const list = kind === 'char' ? LOCKED_CHARS : LOCKED_WEAPONS;
+    return !list.includes(id) || this.meta.unlocked[kind + 's'].includes(id);
+  }
+
+  // Fold this run's progress into lifetime stats (safe to call repeatedly).
+  commitRun() {
+    const r = this.run, st = this.meta.stats;
+    if (!r) return;
+    const c = r.committed;
+    st.kills += r.kills - c.kills; st.bosses += r.bosses - c.bosses; st.chests += r.chestsOpened - c.chests;
+    c.kills = r.kills; c.bosses = r.bosses; c.chests = r.chestsOpened;
+    saveMeta(this.meta);
+  }
+
+  achievementSnapshot() {
+    const r = this.run, st = this.meta.stats;
+    return {
+      run: {
+        kills: r.kills, level: r.level, bosses: r.bosses, gold: r.gold, won: !!r.won, heat: r.heat, mode: r.config.mode,
+        realm: this.stageIndex + 1 + r.loop * REALM_COUNT, items: Object.values(r.items).reduce((a, b) => a + b, 0),
+        legendary: r.legendary, shrines: r.shrines, challenges: r.challenges, evolutions: r.evolutions,
+        weapons: this.weapons?.list.length || 0, tomes: Object.keys(r.tomes).length, bossKills: r.bossKills,
+        overtime: this.overtime || 0, mutators: r.mutators.length, glass: r.mutators.includes('glasscannon'),
+      },
+      life: {
+        kills: st.kills + r.kills - r.committed.kills, bosses: st.bosses + r.bosses - r.committed.bosses,
+        chests: st.chests + r.chestsOpened - r.committed.chests, heroWins: st.heroWins.length, realms: st.realms.length,
+        shards: st.shards,
+      },
+    };
+  }
+
+  checkAchievements() {
+    if (!this.run) return;
+    const snap = this.achievementSnapshot();
+    for (const a of ACHIEVEMENTS) {
+      if (this.meta.achievements[a.id]) continue;
+      let ok = false;
+      try { ok = a.test(snap); } catch { ok = false; }
+      if (!ok) continue;
+      this.meta.achievements[a.id] = new Date().toISOString().slice(0, 10);
+      let extra = '';
+      if (a.unlock?.char) { this.meta.unlocked.chars.push(a.unlock.char); extra = ` — unlocked hero ${CHARACTERS.find((c) => c.id === a.unlock.char).name}!`; }
+      if (a.unlock?.weapon) { this.meta.unlocked.weapons.push(a.unlock.weapon); extra = ` — unlocked a new weapon!`; }
+      saveMeta(this.meta);
+      this.ui.toast(`🏆 ${a.icon} ${a.name}: ${a.desc}${extra}`, '#ffd24a', 7);
+      this.audio.play('legendary');
+    }
+  }
+
   // Show patch notes once after an update (returning players only).
   checkWhatsNew() {
     const seen = this.settings.lastVersion;
@@ -164,6 +258,7 @@ class Game {
     this.stage = STAGES[0];
     this.stageIndex = 0;
     this.world = new World(this.scene, this.stage, 1234);
+    this.world.camera = this.camera;
     this.menuOrbit = 0;
     this.audio.setTheme('menu');
     this.input.setTouchVisible(false);
@@ -179,16 +274,20 @@ class Game {
     const cfg = makeRunConfig(this.mode, charId);
     const char = CHARACTERS.find((c) => c.id === cfg.charId) || CHARACTERS[0];
     this.teardownRun();
-    this.mods = buildMods(cfg.mutators);
+    const heat = cfg.mode === 'daily' ? 0 : Math.min(this.heat, this.meta.maxHeat || 0);
+    this.mods = applyHeat(buildMods(cfg.mutators), heat);
+    cfg.shardMult = (cfg.shardMult || 1) + heatShardBonus(heat);
     this.run = {
-      config: cfg, realms: cfg.realms, mutators: cfg.mutators,
+      config: cfg, realms: cfg.realms, mutators: cfg.mutators, heat,
+      chestsOpened: 0, shrines: 0, challenges: 0, evolutions: 0, legendary: false, bossKills: [], bossHurt: false,
+      committed: { kills: 0, bosses: 0, chests: 0 }, achT: 0,
       char, loop: 0, kills: 0, gold: 0, goldEarned: 0, damageDealt: 0, level: 1, xp: 0, xpNext: this.xpFor(1),
       tomes: {}, items: {}, totalTime: 0, pendingLevels: 0, bosses: 0, shardsPaid: 0, banished: new Set(),
       rerolls: 2 + (this.meta.levels.reroll || 0), banishes: 1 + (this.meta.levels.banish || 0),
     };
     this.meta.totalRuns = (this.meta.totalRuns || 0) + 1;
     saveMeta(this.meta);
-    this.stageDuration = this.ui.runLength;
+    this.stageDuration = Math.round(this.ui.runLength * this.mods.timerMult);
     this.enemies = new EnemyManager(this);
     this.combat = new Combat(this);
     this.hazards = new Hazards(this);
@@ -231,6 +330,7 @@ class Game {
   loadStage(index, char) {
     this.stageIndex = index;
     this.stage = this.run.realms[index];
+    if (!this.meta.stats.realms.includes(this.stage.id)) { this.meta.stats.realms.push(this.stage.id); saveMeta(this.meta); }
     this.disposeStageObjects();
     this.enemies.reset();
     this.combat.clear();
@@ -240,6 +340,7 @@ class Game {
     if (this.boss) { this.boss.dispose(); this.boss = null; }
     const seed = this.run.config.seed ? (this.run.config.seed + index * 7919 + this.run.loop * 104729) >>> 0 : (Math.random() * 1e9) | 0;
     this.world = new World(this.scene, this.stage, seed);
+    this.world.camera = this.camera;
     if (this.mods.fog !== 1) { this.scene.fog.near *= this.mods.fog; this.scene.fog.far *= this.mods.fog; }
     this.geyserT = 8;
     if (!this.player) this.player = new Player(this, char);
@@ -338,7 +439,7 @@ class Game {
     return {
       stage: this.stageIndex + 1 + this.run.loop * REALM_COUNT, stageName: this.stage.name, level: this.run.level,
       kills: this.run.kills, gold: this.run.goldEarned, damage: this.run.damageDealt, time: this.run.totalTime,
-      killedBy: this.player?.lastHurtBy, bosses: this.run.bosses, mode: this.run.config.mode, label: this.run.config.label,
+      killedBy: this.player?.lastHurtBy, bosses: this.run.bosses, heat: this.run.heat, mode: this.run.config.mode, label: this.run.config.label,
     };
   }
 
@@ -352,6 +453,7 @@ class Game {
     this.saveRecord(sum, false);
     sum.shards = this.payShards();
     sum.dailyScore = this.run.dailyScore; sum.dailyBest = this.run.dailyBest;
+    sum.posted = this.postScore(sum);
     this.ui.shake(0.8);
     setTimeout(() => {
       if (this.state === 'dead') this.ui.showGameOver(sum);
@@ -362,6 +464,7 @@ class Game {
     const portal = this.world.portal;
     portal.state = 'active';
     this.bossActive = true;
+    this.run.bossHurt = false;
     const a = Math.atan2(this.player.x - portal.x, this.player.z - portal.z);
     const bx = portal.x + Math.sin(a) * 9, bz = portal.z + Math.cos(a) * 9;
     this.boss = new Boss(this, this.stage.boss, bx, bz);
@@ -372,9 +475,11 @@ class Game {
     this.hint('boss', 'Red zones explode after a moment. Jump over shockwave rings and low bullets.');
   }
 
-  onBossDefeated() {
+  onBossDefeated(boss) {
     this.bossActive = false;
     this.run.bosses++;
+    this.run.bossKills.push({ id: boss.id, hitless: !this.run.bossHurt, timeLeft: this.stageDuration - this.stageTime });
+    this.checkAchievements();
     this.world.portal.state = 'open';
     this.audio.setTheme(this.stage.id, this.finalSwarm ? 2 : 0);
     this.player.heal(this.player.stats.maxHp * 0.3);
@@ -391,10 +496,17 @@ class Game {
     const last = this.stageIndex === REALM_COUNT - 1;
     if (last && this.run.loop === 0 && !this.run.wonOnce) {
       this.run.wonOnce = true;
+      this.run.won = true;
+      if (!this.meta.stats.heroWins.includes(this.run.char.id)) this.meta.stats.heroWins.push(this.run.char.id);
       this.state = 'victory';
       this.saveRecord(sum, true);
+      if (this.run.heat >= (this.meta.maxHeat || 0) && (this.meta.maxHeat || 0) < MAX_HEAT) {
+        this.meta.maxHeat = this.run.heat + 1;
+        sum.heatUnlocked = this.meta.maxHeat;
+      }
       sum.shards = this.payShards();
       sum.dailyScore = this.run.dailyScore; sum.dailyBest = this.run.dailyBest;
+      sum.posted = this.postScore(sum);
       this.ui.showVictory(sum);
     } else {
       this.state = 'stageclear';
@@ -418,7 +530,7 @@ class Game {
   }
 
   quitToMenu() {
-    if (this.run && !['dead', 'victory', 'menu'].includes(this.state)) this.payShards();
+    if (this.run && !['dead', 'victory', 'menu'].includes(this.state)) { this.payShards(); this.postScore(this.summary()); }
     this.teardownRun();
     this.state = 'menu';
     this.ui.showHud(false);
@@ -432,8 +544,20 @@ class Game {
     switch (act) {
       case 'char': this.ui.selectedChar = data.id; this.ui.showMenu(this.records); this.audio.play('click'); break;
       case 'shop': this.ui.showShop(this.meta); break;
+      case 'heat': this.heat = Math.max(0, Math.min(this.meta.maxHeat || 0, this.heat + Number(data.v))); this.ui.showMenu(this.records); this.audio.play('click'); break;
       case 'mode': this.mode = data.v; this.ui.showMenu(this.records); this.audio.play('click'); break;
       case 'whatsnew': this.ui.showWhatsNew(); break;
+      case 'achievements': this.ui.showAchievements(); break;
+      case 'boards': this.ui.showBoards(data.v || 'daily'); break;
+      case 'savename': {
+        const el = document.getElementById('pname');
+        this.settings.playerName = cleanName(el?.value);
+        saveSettings(this.settings);
+        this.ui.toast(this.settings.playerName ? `Name saved: ${this.settings.playerName}` : 'Name cleared', '#7fe0ff');
+        this.ui.showBoards(data.v || 'daily');
+        break;
+      }
+      case 'lockedchar': this.ui.toast(`🔒 ${data.req}`, '#ff8a6a', 3); this.audio.play('deny'); break;
       case 'buy': this.buyMeta(data.id); break;
       case 'settings': this.ui.showSettings(this.settings, this.state === 'paused' ? 'pause' : 'menu'); break;
       case 'set': this.updateSetting(data.key, data.type === 'bool' ? !this.settings[data.key] : data.type === 'num' ? Number(data.v) : data.v); this.ui.showSettings(this.settings, data.from); break;
@@ -441,7 +565,10 @@ class Game {
       case 'resethints': this.settings.hints = {}; saveSettings(this.settings); this.ui.toast('Tips will show again', '#9fe8ff'); break;
       case 'banish': this.banishChoice(Number(data.i)); break;
       case 'len': this.ui.runLength = Number(data.v); this.ui.showMenu(this.records); break;
-      case 'start': this.startRun(this.ui.selectedChar); break;
+      case 'start':
+        if (this.mode !== 'daily' && !this.isUnlocked('char', this.ui.selectedChar)) this.ui.selectedChar = 'knight';
+        this.startRun(this.ui.selectedChar);
+        break;
       case 'help': this.ui.showHelp(); break;
       case 'back': this.ui.showMenu(this.records); break;
       case 'resume': this.resume(); break;
@@ -538,10 +665,12 @@ class Game {
         if (this.run.gold < cost) { this.audio.play('deny'); this.ui.toast(`Need ${cost} gold`, '#ff6a6a', 1.5); return; }
         this.run.gold -= cost;
         if (!it.free) this.stageChests++;
+        this.run.chestsOpened++;
         this.world.removeInteractable(it);
         const { id, item } = rollChestItem(this, it.free ? 1 : 0);
         giveItem(this, id);
         const r = RARITIES[item.rarity];
+        if (item.rarity >= 4) this.run.legendary = true;
         this.audio.play(item.rarity >= 3 ? 'legendary' : 'chest');
         const gy = this.world.heightAt(it.x, it.z);
         this.fx.burst(it.x, gy + 1, it.z, r.color, 25 + item.rarity * 10, 7);
@@ -580,6 +709,7 @@ class Game {
 
   completeShrine(it) {
     it.used = true;
+    this.run.shrines++;
     it.mesh.userData.crystal.visible = false;
     it.mesh.userData.fill.visible = false;
     this.audio.play('shrine');
@@ -605,9 +735,18 @@ class Game {
   }
 
   // ─────────────────────── main loop ───────────────────────
+  // brief freeze-frame for impact
+  hitStop(dur) { this.stopT = Math.max(this.stopT || 0, dur); }
+  // slow motion for `dur` real seconds
+  slowMo(scale, dur) { this.slowScale = scale; this.slowT = dur; }
+
   frame(now) {
     const raw = (now - this.last) / 1000;
-    const dt = Math.min(0.05, raw);
+    let dt = Math.min(0.05, raw);
+    if (this.state === 'play') {
+      if (this.stopT > 0) { this.stopT -= dt; dt *= 0.05; }
+      else if (this.slowT > 0) { this.slowT -= dt; dt *= this.slowScale; }
+    }
     this.last = now;
     this.fpsT += raw; this.fpsN++;
     if (this.fpsT >= 0.5) { this.fps = Math.round(this.fpsN / this.fpsT); this.fpsT = 0; this.fpsN = 0; }
@@ -674,6 +813,8 @@ class Game {
       }
       if (this.finalSwarm) this.overtime += dt;
       if (this.stage.hazard === 'geysers') this.updateGeysers(dt);
+      this.run.achT -= dt;
+      if (this.run.achT <= 0) { this.run.achT = 1; this.checkAchievements(); }
     }
 
     // camera input

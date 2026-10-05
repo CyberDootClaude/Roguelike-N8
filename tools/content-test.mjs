@@ -73,6 +73,47 @@ await page.evaluate(() => { const g = window.__game; g.renderer.render = g._rend
 await page.waitForTimeout(400);
 await page.screenshot({ path: `${out}/c-queen.png` });
 console.log('turrets', await page.evaluate(() => window.__game.combat.turrets.length));
+// Evolution: max a weapon, own its partner tome, level up -> the evolve card must be offered and work
+const evo = await page.evaluate(async () => {
+  const g = window.__game;
+  g.quitToMenu();
+  g.mode = 'standard';
+  g.startRun('ranger');
+  g._render = g._render || g.renderer.render; g.pause = () => {};
+  const w = g.weapons.get('bow');
+  w.level = 7;
+  g.run.tomes.quantity = 1;
+  const { buildLevelChoices, applyChoice } = await import('/src/progression.js');
+  const choices = buildLevelChoices(g);
+  const card = choices.find((c) => c.type === 'evolve');
+  if (card) applyChoice(g, card);
+  for (let i = 0; i < 90; i++) { if (g.state === 'modal') g.pickChoice(0); g.update(1 / 30); g.input.endFrame(); }
+  g.checkAchievements();
+  return { offered: !!card, name: w.def.name, effect: w.effect, evolutions: g.run.evolutions, ach: Object.keys(g.meta.achievements) };
+});
+console.log('evolution', JSON.stringify(evo));
+if (!evo.offered || evo.name !== 'Storm of Arrows') { console.log('FAIL: evolution not offered/applied'); process.exitCode = 1; }
+// Heat applies, menus render
+const heat = await page.evaluate(() => {
+  const g = window.__game;
+  g.quitToMenu(); g.meta.maxHeat = 3; g.heat = 3; g.mode = 'standard';
+  g.startRun('knight');
+  return { heat: g.run.heat, enemyHp: g.mods.enemyHp, timer: g.stageDuration };
+});
+console.log('heat', JSON.stringify(heat));
+if (heat.heat !== 3 || !(heat.enemyHp > 1)) { console.log('FAIL: heat not applied'); process.exitCode = 1; }
+await page.evaluate(() => { const g = window.__game; g.quitToMenu(); g.renderer.render = g._render || g.renderer.render; g.ui.showAchievements(); });
+await page.waitForTimeout(300);
+await page.screenshot({ path: `${out}/c-achievements.png` });
+await page.evaluate(() => window.__game.ui.showBoards('daily'));
+await page.waitForTimeout(500);
+await page.screenshot({ path: `${out}/c-boards.png` });
+await page.evaluate(() => window.__game.ui.showMenu(window.__game.records));
+await page.waitForTimeout(300);
+await page.screenshot({ path: `${out}/c-menu-heat.png` });
 console.log('errors:', errors.length ? [...new Set(errors)].join('\n') : 'none');
+const gameErr = await page.evaluate(() => String(window.__game?.lastError || '')).catch(() => '');
+if (gameErr) console.log('game error:', gameErr);
+if (errors.length || gameErr) process.exitCode = 1;
 await browser.close();
 server.close();

@@ -263,6 +263,7 @@ export class Boss {
     const hp = game.mods.bossHp * def.hp * game.stage.bossMult * Math.pow(4, game.run.loop) * (1 + game.player.stats.curse * 0.4);
     this.dmg = sc.dmg;
     this.group = def.model();
+    this.group.traverse((o) => { if (o.isMesh) o.castShadow = true; });
     this.group.scale.setScalar(0.01);
     game.scene.add(this.group);
     this.shadow = new THREE.Mesh(new THREE.CircleGeometry(def.radius * 1.3, 24).rotateX(-Math.PI / 2),
@@ -295,6 +296,7 @@ export class Boss {
 
   update(dt) {
     if (this.dead) return;
+    if (this.dying) { this.updateDying(dt); return; }
     const g = this.game, p = g.player, e = this.e, def = this.def;
     this.t += dt;
     // intro: grow out of the ground
@@ -316,6 +318,7 @@ export class Boss {
     }
     if (this.phase === 1 && e.hp < e.maxHp * 0.5) {
       this.phase = 2;
+      g.hitStop(0.15);
       g.ui.toast(`${def.name.split(',')[0]} is enraged!`, def.color);
       g.fx.ring(e.x, e.y, e.z, 1, 14, 0xff3030, 0.8);
       g.audio.play('boss');
@@ -778,16 +781,46 @@ export class Boss {
     return action(0.5);
   }
 
+  // Death plays out over ~1.6s of slow motion before the loot drops.
   die() {
-    if (this.dead) return;
-    this.dead = true;
+    if (this.dead || this.dying) return;
+    const g = this.game;
+    this.dying = 1.6;
+    this.e.untargetable = true;
+    this.cur = null;
+    g.hazards.clear();
+    g.slowMo(0.3, 1.1);
+    g.audio.play('boss');
+    g.ui.setBanner(`${this.def.name.split(',')[0]} falls!`, '', this.def.color, 2.2);
+  }
+
+  updateDying(dt) {
     const g = this.game, e = this.e;
+    this.dying -= dt;
+    this.t += dt;
+    this.boomT = (this.boomT || 0) - dt;
+    if (this.boomT <= 0) {
+      this.boomT = 0.12;
+      const h = this.def.height;
+      g.fx.explosion(e.x + rand(-2, 2), e.y + rand(0.5, h), e.z + rand(-2, 2), rand(1.5, 3), [0xffffff, 0xffd24a, this.def.color === '#ff7a2a' ? 0xff7a2a : 0xff5a3a][Math.floor(Math.random() * 3)], 0.4);
+      g.ui.shake(0.35);
+    }
+    this.group.rotation.z = Math.sin(this.t * 40) * 0.05;
+    const k = Math.max(0, this.dying / 1.6);
+    this.group.scale.setScalar(0.6 + 0.4 * k);
+    if (this.dying <= 0) this.finishDeath();
+  }
+
+  finishDeath() {
+    this.dead = true;
+    this.dying = 0;
+    const g = this.game, e = this.e;
+    g.hitStop(0.12);
     g.fx.explosion(e.x, e.y + 3, e.z, 8, 0xffffff, 0.8);
     g.fx.burst(e.x, e.y + 3, e.z, 0xffd24a, 60, 12, 1.2, 2);
     g.ui.shake(0.8);
     g.audio.play('explode');
     g.scene.remove(this.group, this.shadow);
-    g.hazards.clear();
     const sc = g.enemies.scaling();
     for (let i = 0; i < 12; i++) g.pickups.gem(e.x + rand(-3, 3), e.y + 1, e.z + rand(-3, 3), 20 * sc.xp);
     for (let i = 0; i < 10; i++) g.pickups.coin(e.x + rand(-3, 3), e.y + 1, e.z + rand(-3, 3), Math.ceil(8 * (1 + g.stageIndex * 0.6)));

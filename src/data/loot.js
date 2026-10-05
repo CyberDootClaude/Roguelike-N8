@@ -267,3 +267,24 @@ export const CHARACTERS = [
     hat: 'crystal',
   },
 ];
+
+// Weapon evolutions: a weapon at EVOLVE_LEVEL+ plus its partner tome can evolve into a super weapon.
+// `mult` multiplies stats, `add` adds to them, `effect` is an on-hit bonus (freeze, burn, chain, explode, gold).
+export const EVOLVE_LEVEL = 7;
+export const EVOLUTIONS = {
+  hammer: { tome: 'vitality', name: "Titan's Maul", icon: '🪓', effect: 'explode', mult: { damage: 2, size: 1.35 }, add: { count: 1 }, desc: 'Swings both ways and every hit can erupt.' },
+  bow: { tome: 'quantity', name: 'Storm of Arrows', icon: '🌩️', effect: 'chain', mult: { damage: 1.4 }, add: { count: 3, pierce: 3 }, desc: 'A volley of piercing arrows that arc lightning.' },
+  firestaff: { tome: 'area', name: 'Inferno Staff', icon: '🌋', effect: 'burn', mult: { damage: 1.8, size: 1.5 }, add: { count: 1 }, desc: 'Huge fireballs that set enemies ablaze.' },
+  stormrod: { tome: 'haste', name: 'Thunderlord', icon: '🌪️', effect: 'chain', mult: { damage: 1.5, cooldown: 0.6 }, add: { count: 5 }, desc: 'Lightning that leaps through whole crowds.' },
+  frostaura: { tome: 'armor', name: 'Absolute Zero', icon: '🧊', effect: 'freeze', mult: { damage: 2, size: 1.5 }, add: {}, desc: 'A vast freezing field that locks enemies in ice.' },
+  blades: { tome: 'swift', name: 'Blade Tempest', icon: '⚔️', effect: 'burn', mult: { damage: 1.5, size: 1.3 }, add: { count: 4 }, desc: 'A storm of blades circling you.' },
+  boomerang: { tome: 'velocity', name: 'Twin Glaives', icon: '💫', effect: 'explode', mult: { damage: 1.6, size: 1.2 }, add: { count: 2 }, desc: 'Heavy glaives that burst on impact.' },
+  flask: { tome: 'duration', name: 'Plague Cauldron', icon: '☣️', effect: 'burn', mult: { damage: 1.8, size: 1.6 }, add: { count: 1 }, desc: 'Vast, lingering clouds of plague.' },
+  revolver: { tome: 'precision', name: 'Hand Cannon', icon: '💥', effect: 'explode', mult: { damage: 2.2 }, add: { pierce: 3, crit: 0.25 }, desc: 'Explosive, piercing, criticals galore.' },
+  beam: { tome: 'power', name: 'Solar Lance', icon: '🔆', effect: 'burn', mult: { damage: 1.8, size: 1.3 }, add: { count: 2 }, desc: 'Twin beams of searing sunlight.' },
+  meteor: { tome: 'cursed', name: 'Armageddon', icon: '☄️', effect: 'burn', mult: { damage: 1.5, size: 1.3 }, add: { count: 4 }, desc: 'The sky falls. Repeatedly.' },
+  mines: { tome: 'greed', name: 'Gold Bombs', icon: '💰', effect: 'gold', mult: { damage: 2, size: 1.2 }, add: { count: 1 }, desc: 'Explosions that shake loose extra gold.' },
+  chakram: { tome: 'magnet', name: 'Gravity Rings', icon: '🪐', effect: 'chain', mult: { damage: 1.4 }, add: { count: 6, pierce: 3 }, desc: 'Endless rings that ripple through foes.' },
+  prism: { tome: 'area', name: 'Kaleidoscope', icon: '🌈', effect: 'freeze', mult: { damage: 1.5 }, add: { count: 4, pierce: 1 }, desc: 'A rainbow blast that freezes what it touches.' },
+  totem: { tome: 'wisdom', name: 'Ancestor Circle', icon: '🗿', effect: 'chain', mult: { damage: 2 }, add: { count: 2 }, desc: 'Ancient totems that call down lightning.' },
+};

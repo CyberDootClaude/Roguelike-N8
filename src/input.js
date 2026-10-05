@@ -11,7 +11,7 @@ export class Input {
     this.touchKeys = new Set();
     this.isTouch = matchMedia('(pointer: coarse)').matches || 'ontouchstart' in window;
     window.addEventListener('keydown', (e) => {
-      if (e.repeat) return;
+      if (e.repeat || e.target?.tagName === 'INPUT') return;
       this.keys.add(e.code);
       this.pressed.add(e.code);
       if (['Space', 'ArrowUp', 'ArrowDown', 'Tab'].includes(e.code)) e.preventDefault();

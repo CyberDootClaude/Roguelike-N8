@@ -37,6 +37,14 @@ export class WeaponInstance {
     return out;
   }
 
+  evolve(evo) {
+    this.evolved = evo;
+    this.effect = evo.effect;
+    this.def = { ...this.def, name: evo.name, icon: evo.icon, desc: evo.desc };
+    for (const [k, v] of Object.entries(evo.mult)) this.stats[k] *= v;
+    for (const [k, v] of Object.entries(evo.add)) this.stats[k] += v;
+  }
+
   applyUpgrade(rolls) {
     this.level++;
     for (const { key, value } of rolls) {
@@ -102,6 +110,7 @@ export class WeaponSystem {
     let hasAura = false, hasOrbit = false;
     for (const w of this.list) {
       const s = this.eff(w);
+      this.firingEffect = w.effect || null;
       if (w.def.kind === 'aura') { hasAura = true; this.updateAura(w, s, dt); continue; }
       if (w.def.kind === 'orbit') { hasOrbit = true; this.updateOrbit(w, s, dt); continue; }
       w.cd -= dt;
@@ -110,6 +119,7 @@ export class WeaponSystem {
         w.cd = fired ? s.cooldown : 0.15;
       }
     }
+    this.firingEffect = null;
     this.aura.visible = this.auraRing.visible = hasAura;
     if (!hasOrbit) this.setBladeCount(0);
     void game;

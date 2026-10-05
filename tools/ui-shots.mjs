@@ -86,5 +86,6 @@ const watch = (page) => {
   await ctx.close();
 }
 console.log('errors:', errors.length ? [...new Set(errors)].join('\n') : 'none');
+if (errors.length) process.exitCode = 1;
 await browser.close();
 server.close();

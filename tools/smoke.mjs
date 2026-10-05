@@ -59,7 +59,8 @@ for (let s = 0; s < stagesToRun; s++) {
   for (let i = 0; i < 14; i++) { await step(700); await autoPick(); }
   await page.screenshot({ path: `${out}/s${s}-c-boss2.png` });
   await G(() => { const g = window.__game; g.boss.e.hp = 1; g.combat.damage(g.boss.e, 1e9, {}); });
-  await step(800); await autoPick();
+  for (let w = 0; w < 100 && !(await G(() => window.__game.boss?.dead)); w++) { await step(300); await autoPick(); }
+  await step(300); await autoPick();
   await G(() => { const g = window.__game; const p = g.world.portal; g.player.placeAt(p.x + 1, p.z + 1); g.interact(p); });
   await step(300);
   const st = await G(() => window.__game.state);
@@ -72,5 +73,8 @@ for (let s = 0; s < stagesToRun; s++) {
 const stats = await G(() => { const g = window.__game; return { state: g.state, stage: g.stageIndex, level: g.run.level, kills: g.run.kills, fps: 0, err: String(g.lastError || '') }; });
 console.log('final', JSON.stringify(stats));
 console.log('errors:', errors.length ? errors.slice(0, 10).join('\n') : 'none');
+const gameErr = await page.evaluate(() => String(window.__game?.lastError || '')).catch(() => '');
+if (gameErr) console.log('game error:', gameErr);
+if (errors.length || gameErr) process.exitCode = 1;
 await browser.close();
 server.close();
